@@ -20,7 +20,22 @@ class MenuHandler:
             plugin: Plugin instance
         """
         self.plugin = plugin
-    
+
+    def has_selection(self, player: "Player") -> bool:
+        """Check if player has a valid selection.
+
+        Args:
+            player: Player to check
+
+        Returns:
+            True if player has both pos1 and pos2 set
+        """
+        uuid = str(player.unique_id)
+        if uuid not in self.plugin.selections:
+            return False
+        selection = self.plugin.selections[uuid]
+        return "pos1" in selection and "pos2" in selection
+
     def show_main_menu(self, player: "Player") -> None:
         """Show main builder menu.
 
@@ -224,6 +239,12 @@ class MenuHandler:
         Args:
             player: Player to show menu to
         """
+        # Check if player has a selection
+        if not self.has_selection(player):
+            player.send_message("§cPlease make a selection first! Use the wand or //pos1 and //pos2§r")
+            self.show_clipboard_menu(player)
+            return
+
         form = ModalForm()
         form.title = "§l§dCopy Options§r"
         form.add_control(Toggle("Include Air Blocks", False))
@@ -320,6 +341,12 @@ class MenuHandler:
         Args:
             player: Player to show menu to
         """
+        # Check if player has a selection
+        if not self.has_selection(player):
+            player.send_message("§cPlease make a selection first! Use the wand or //pos1 and //pos2§r")
+            self.show_editing_menu(player)
+            return
+
         form = ModalForm()
         form.title = "§l§aSet Blocks§r"
         form.add_control(TextInput("Block Type:", "Example: stone, grass, diamond_block", "stone"))
@@ -349,6 +376,12 @@ class MenuHandler:
         Args:
             player: Player to show menu to
         """
+        # Check if player has a selection
+        if not self.has_selection(player):
+            player.send_message("§cPlease make a selection first! Use the wand or //pos1 and //pos2§r")
+            self.show_editing_menu(player)
+            return
+
         form = ModalForm()
         form.title = "§l§eReplace Blocks§r"
         form.add_control(TextInput("From Block:", "Block to replace", "stone"))
@@ -380,6 +413,12 @@ class MenuHandler:
         Args:
             player: Player to show menu to
         """
+        # Check if player has a selection
+        if not self.has_selection(player):
+            player.send_message("§cPlease make a selection first! Use the wand or //pos1 and //pos2§r")
+            self.show_editing_menu(player)
+            return
+
         form = ModalForm()
         form.title = "§l§bWalls§r"
         form.add_control(TextInput("Block Type:", "Example: stone, brick", "stone"))
@@ -409,6 +448,12 @@ class MenuHandler:
         Args:
             player: Player to show menu to
         """
+        # Check if player has a selection
+        if not self.has_selection(player):
+            player.send_message("§cPlease make a selection first! Use the wand or //pos1 and //pos2§r")
+            self.show_editing_menu(player)
+            return
+
         form = ModalForm()
         form.title = "§l§dOverlay§r"
         form.add_control(TextInput("Block Type:", "Example: grass, snow", "grass"))
@@ -816,22 +861,42 @@ class MenuHandler:
         form.title = "§l§5Build Areas§r"
         form.content = "§7Manage your build areas§r"
 
-        form.add_button("§aMy Build Areas§r\n§7List your areas§r")
-        form.add_button("§bCurrent Area Info§r\n§7Info about current area§r")
+        # Only show create/add builder options to operators
+        if player.is_op:
+            form.add_button("§aCreate Build Area§r\n§7Create from selection§r")
+            form.add_button("§eAdd Builder to Area§r\n§7Grant access to player§r")
+
+        form.add_button("§bMy Build Areas§r\n§7List your areas§r")
+        form.add_button("§dCurrent Area Info§r\n§7Info about current area§r")
         form.add_button("§7« Back to Main Menu§r")
 
         def on_submit(player: "Player", data: Optional[int]):
             if data is None:
                 return
 
-            if data == 0:  # My areas
-                player.perform_command("myareas")
-                self.show_build_areas_menu(player)
-            elif data == 1:  # Area info
-                player.perform_command("areainfo")
-                self.show_build_areas_menu(player)
-            else:  # Back
-                self.show_main_menu(player)
+            # Adjust indices based on whether player is op
+            if player.is_op:
+                if data == 0:  # Create area
+                    self.show_create_build_area_form(player)
+                elif data == 1:  # Add builder
+                    self.show_add_builder_form(player)
+                elif data == 2:  # My areas
+                    player.perform_command("myareas")
+                    self.show_build_areas_menu(player)
+                elif data == 3:  # Area info
+                    player.perform_command("areainfo")
+                    self.show_build_areas_menu(player)
+                else:  # Back
+                    self.show_main_menu(player)
+            else:
+                if data == 0:  # My areas
+                    player.perform_command("myareas")
+                    self.show_build_areas_menu(player)
+                elif data == 1:  # Area info
+                    player.perform_command("areainfo")
+                    self.show_build_areas_menu(player)
+                else:  # Back
+                    self.show_main_menu(player)
 
         form.on_submit = on_submit
         player.send_form(form)
@@ -887,6 +952,135 @@ class MenuHandler:
                 self.show_undo_menu(player)
             else:  # Back
                 self.show_main_menu(player)
+
+        form.on_submit = on_submit
+        player.send_form(form)
+
+    def show_create_build_area_form(self, player: "Player") -> None:
+        """Show create build area form.
+
+        Args:
+            player: Player to show menu to
+        """
+        # Check if player has a selection
+        if not self.has_selection(player):
+            player.send_message("§cPlease make a selection first! Use the wand or //pos1 and //pos2§r")
+            self.show_build_areas_menu(player)
+            return
+
+        # Get selection info
+        uuid = str(player.unique_id)
+        selection = self.plugin.selections[uuid]
+        pos1 = selection["pos1"]
+        pos2 = selection["pos2"]
+
+        form = ModalForm()
+        form.title = "§l§aCreate Build Area§r"
+        form.add_control(TextInput("Area Name:", "Enter a unique name", "my_area"))
+        form.add_control(Toggle("Enable Creative Mode", True))
+
+        # Show selection info in the form
+        info = f"§7Selection: ({pos1[0]}, {pos1[1]}, {pos1[2]}) to ({pos2[0]}, {pos2[1]}, {pos2[2]})§r"
+
+        def on_submit(player: "Player", data: Optional[str]):
+            if data is None:
+                self.show_build_areas_menu(player)
+                return
+
+            import json
+            values = json.loads(data)
+
+            if not values[0]:
+                player.send_message("§cPlease enter an area name!§r")
+                self.show_build_areas_menu(player)
+                return
+
+            area_name = values[0].strip()
+            creative_mode = values[1] if len(values) > 1 else True
+
+            # Get current selection
+            uuid = str(player.unique_id)
+            if uuid not in self.plugin.selections:
+                player.send_message("§cSelection lost! Please select again.§r")
+                self.show_build_areas_menu(player)
+                return
+
+            selection = self.plugin.selections[uuid]
+            if "pos1" not in selection or "pos2" not in selection:
+                player.send_message("§cSelection lost! Please select again.§r")
+                self.show_build_areas_menu(player)
+                return
+
+            pos1 = selection["pos1"]
+            pos2 = selection["pos2"]
+            world = player.dimension.name
+
+            # Create the area
+            if self.plugin.build_area_manager.create_area(area_name, world, pos1, pos2, creative_mode):
+                player.send_message(f"§aCreated build area '§e{area_name}§a'!§r")
+                player.send_message(f"§7Use 'Add Builder to Area' to grant access to players.§r")
+            else:
+                player.send_message(f"§cBuild area '§e{area_name}§c' already exists!§r")
+
+            self.show_build_areas_menu(player)
+
+        form.on_submit = on_submit
+        player.send_form(form)
+
+    def show_add_builder_form(self, player: "Player") -> None:
+        """Show add builder to area form.
+
+        Args:
+            player: Player to show menu to
+        """
+        # Get list of all build areas
+        areas = self.plugin.build_area_manager.list_areas()
+
+        if not areas:
+            player.send_message("§cNo build areas exist! Create one first.§r")
+            self.show_build_areas_menu(player)
+            return
+
+        form = ModalForm()
+        form.title = "§l§eAdd Builder to Area§r"
+
+        # Create dropdown with area names
+        area_names = [area.name for area in areas]
+        form.add_control(Dropdown("Select Area:", area_names, 0))
+        form.add_control(TextInput("Player Name:", "Enter player name", ""))
+
+        def on_submit(player: "Player", data: Optional[str]):
+            if data is None:
+                self.show_build_areas_menu(player)
+                return
+
+            import json
+            values = json.loads(data)
+
+            area_index = values[0] if len(values) > 0 else 0
+            player_name = values[1].strip() if len(values) > 1 and values[1] else ""
+
+            if not player_name:
+                player.send_message("§cPlease enter a player name!§r")
+                self.show_build_areas_menu(player)
+                return
+
+            # Get the selected area name
+            if area_index >= len(area_names):
+                player.send_message("§cInvalid area selection!§r")
+                self.show_build_areas_menu(player)
+                return
+
+            area_name = area_names[area_index]
+
+            # Add the builder
+            if self.plugin.build_area_manager.add_builder_to_area(area_name, player_name):
+                player.send_message(f"§aAdded §e{player_name}§a to build area '§e{area_name}§a'!§r")
+                player.send_message(f"§7They will auto-switch to creative mode when entering the area.§r")
+            else:
+                player.send_message(f"§cFailed to add builder! Area may not exist.§r")
+
+            self.show_build_areas_menu(player)
 
         form.on_submit = on_submit
         player.send_form(form)
