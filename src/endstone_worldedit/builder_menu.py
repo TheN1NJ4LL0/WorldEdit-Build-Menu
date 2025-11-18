@@ -51,6 +51,7 @@ class MenuHandler:
         form.add_button("§l§3Selection Tools§r\n§7Set positions & view selection§r")
         form.add_button("§l§2Clipboard§r\n§7Copy, cut, paste operations§r")
         form.add_button("§l§eEditing§r\n§7Set, replace, fill blocks§r")
+        form.add_button("§l§bTransform§r\n§7Rotate & flip selection§r")
         form.add_button("§l§dShapes§r\n§7Create spheres, cylinders§r")
         form.add_button("§l§9Schematics§r\n§7Save & load builds§r")
         form.add_button("§l§5Build Areas§r\n§7Manage your build areas§r")
@@ -67,15 +68,17 @@ class MenuHandler:
                 self.show_clipboard_menu(player)
             elif data == 2:  # Editing
                 self.show_editing_menu(player)
-            elif data == 3:  # Shapes
+            elif data == 3:  # Transform
+                self.show_transform_menu(player)
+            elif data == 4:  # Shapes
                 self.show_shapes_menu(player)
-            elif data == 4:  # Schematics
+            elif data == 5:  # Schematics
                 self.show_schematic_menu(player)
-            elif data == 5:  # Build Areas
+            elif data == 6:  # Build Areas
                 self.show_build_areas_menu(player)
-            elif data == 6:  # Undo/Redo
+            elif data == 7:  # Undo/Redo
                 self.show_undo_menu(player)
-            # data == 7 is Close, do nothing
+            # data == 8 is Close, do nothing
 
         form.on_submit = on_submit
         player.send_form(form)
@@ -479,6 +482,64 @@ class MenuHandler:
             block_type = values[0].strip()
             player.perform_command(f"overlay {block_type}")
             self.show_editing_menu(player)
+
+        form.on_submit = on_submit
+        player.send_form(form)
+
+    def show_transform_menu(self, player: "Player") -> None:
+        """Show transform menu.
+
+        Args:
+            player: Player to show menu to
+        """
+        form = ActionForm()
+        form.title = "§l§bTransform§r"
+        form.content = "§7Rotate and flip your selection§r"
+
+        form.add_button("§aRotate 90°§r\n§7Rotate clockwise§r")
+        form.add_button("§aRotate 180°§r\n§7Rotate 180 degrees§r")
+        form.add_button("§aRotate 270°§r\n§7Rotate counter-clockwise§r")
+        form.add_button("§eFlip X§r\n§7Flip left/right§r")
+        form.add_button("§eFlip Y§r\n§7Flip up/down§r")
+        form.add_button("§eFlip Z§r\n§7Flip forward/backward§r")
+        form.add_button("§7« Back to Main Menu§r")
+
+        def on_submit(player: "Player", data: Optional[int]):
+            if data is None:
+                return
+
+            # Check if player has a selection
+            if not self.has_selection(player):
+                player.send_message("§cPlease make a selection first! Use the wand or //pos1 and //pos2§r")
+                self.show_transform_menu(player)
+                return
+
+            if data == 0:  # Rotate 90
+                player.perform_command("rotate 90")
+                player.send_message("§aRotated selection 90° clockwise§r")
+                self.show_transform_menu(player)
+            elif data == 1:  # Rotate 180
+                player.perform_command("rotate 180")
+                player.send_message("§aRotated selection 180°§r")
+                self.show_transform_menu(player)
+            elif data == 2:  # Rotate 270
+                player.perform_command("rotate 270")
+                player.send_message("§aRotated selection 270° clockwise§r")
+                self.show_transform_menu(player)
+            elif data == 3:  # Flip X
+                player.perform_command("flip x")
+                player.send_message("§aFlipped selection along X-axis (left/right)§r")
+                self.show_transform_menu(player)
+            elif data == 4:  # Flip Y
+                player.perform_command("flip y")
+                player.send_message("§aFlipped selection along Y-axis (up/down)§r")
+                self.show_transform_menu(player)
+            elif data == 5:  # Flip Z
+                player.perform_command("flip z")
+                player.send_message("§aFlipped selection along Z-axis (forward/backward)§r")
+                self.show_transform_menu(player)
+            elif data == 6:  # Back
+                self.show_main_menu(player)
 
         form.on_submit = on_submit
         player.send_form(form)
@@ -1237,60 +1298,129 @@ class MenuHandler:
                 return
 
             try:
-                # Parse rotation
-
-
                 import json
-
                 values = json.loads(data)
 
-                rotation = values[0] if len(data) > 0 else 0
+                # Parse options
+                rotation = values[0] if len(values) > 0 else 0
                 rotation_degrees = [0, 90, 180, 270][rotation]
+                flip_x = values[1] if len(values) > 1 else False
+                flip_y = values[2] if len(values) > 2 else False
+                flip_z = values[3] if len(values) > 3 else False
+                offset_x = int(values[4]) if len(values) > 4 and values[4] else 0
+                offset_y = int(values[5]) if len(values) > 5 and values[5] else 0
+                offset_z = int(values[6]) if len(values) > 6 and values[6] else 0
+                include_air = values[7] if len(values) > 7 else False
+                paste_entities = values[8] if len(values) > 8 else False
+                paste_biomes = values[9] if len(values) > 9 else False
 
-                # Parse flips
-                flip_x = values[1] if len(data) > 1 else False
-                flip_y = values[2] if len(data) > 2 else False
-                flip_z = values[3] if len(data) > 3 else False
+                # Check if player has clipboard
+                player_uuid = player.unique_id
+                if player_uuid not in self.plugin.clipboard or not self.plugin.clipboard[player_uuid]:
+                    player.send_message("§cThere is nothing to paste. Use /copy first.§r")
+                    self.show_clipboard_menu(player)
+                    return
 
-                # Parse offsets
-                offset_x = int(values[4]) if len(data) > 4 and values[4] else 0
-                offset_y = int(values[5]) if len(data) > 5 and values[5] else 0
-                offset_z = int(values[6]) if len(data) > 6 and values[6] else 0
+                # Get clipboard data
+                copied_blocks = self.plugin.clipboard[player_uuid]
+                dimension = player.dimension
+                player_location = player.location
 
-                # Parse additional options
-                include_air = values[7] if len(data) > 7 else False
-                paste_entities = values[8] if len(data) > 8 else False
-                paste_biomes = values[9] if len(data) > 9 else False
+                # Calculate clipboard bounds for rotation/flip
+                if copied_blocks:
+                    min_x = min(b[0] for b in copied_blocks)
+                    max_x = max(b[0] for b in copied_blocks)
+                    min_y = min(b[1] for b in copied_blocks)
+                    max_y = max(b[1] for b in copied_blocks)
+                    min_z = min(b[2] for b in copied_blocks)
+                    max_z = max(b[2] for b in copied_blocks)
+                    width = max_x - min_x
+                    height = max_y - min_y
+                    length = max_z - min_z
 
-                # Build command
-                cmd = "paste"
+                # Transform blocks
+                transformed_blocks = []
+                for relative_x, relative_y, relative_z, block_type, data_value in copied_blocks:
+                    # Skip air if not including air
+                    if not include_air and block_type == "minecraft:air":
+                        continue
 
-                # Add rotation
-                if rotation_degrees > 0:
-                    cmd += f" -r {rotation_degrees}"
+                    # Normalize to 0-based coordinates
+                    norm_x = relative_x - min_x
+                    norm_y = relative_y - min_y
+                    norm_z = relative_z - min_z
 
-                # Add flips
-                if flip_x:
-                    cmd += " -fx"
-                if flip_y:
-                    cmd += " -fy"
-                if flip_z:
-                    cmd += " -fz"
+                    # Apply rotation
+                    if rotation_degrees == 90:
+                        rot_x = length - norm_z
+                        rot_z = norm_x
+                    elif rotation_degrees == 180:
+                        rot_x = width - norm_x
+                        rot_z = length - norm_z
+                    elif rotation_degrees == 270:
+                        rot_x = norm_z
+                        rot_z = width - norm_x
+                    else:
+                        rot_x = norm_x
+                        rot_z = norm_z
+                    rot_y = norm_y
 
-                # Add offset
-                if offset_x != 0 or offset_y != 0 or offset_z != 0:
-                    cmd += f" -o {offset_x},{offset_y},{offset_z}"
+                    # Apply flips
+                    if flip_x:
+                        rot_x = width - rot_x
+                    if flip_y:
+                        rot_y = height - rot_y
+                    if flip_z:
+                        rot_z = length - rot_z
 
-                # Add other options
-                if include_air:
-                    cmd += " -a"
-                if paste_entities:
-                    cmd += " -e"
-                if paste_biomes:
-                    cmd += " -b"
+                    # Apply offset and convert to world coordinates
+                    target_x = int(player_location.x + rot_x + offset_x)
+                    target_y = int(player_location.y + rot_y + offset_y)
+                    target_z = int(player_location.z + rot_z + offset_z)
 
-                player.perform_command(cmd)
-                player.send_message(f"§aPasted with rotation: {rotation_degrees}°, offset: ({offset_x}, {offset_y}, {offset_z})§r")
+                    transformed_blocks.append((target_x, target_y, target_z, block_type, data_value))
+
+                # Prepare undo
+                undo_entry = []
+                self.plugin.redo_history[player_uuid] = []
+
+                # Store undo history
+                for x, y, z, _, _ in transformed_blocks:
+                    block = dimension.get_block_at(x, y, z)
+                    undo_entry.append((x, y, z, block.type, block.data))
+
+                if player_uuid not in self.plugin.undo_history:
+                    self.plugin.undo_history[player_uuid] = []
+                self.plugin.undo_history[player_uuid].append(undo_entry)
+
+                # Place blocks
+                affected_blocks = len(transformed_blocks)
+                if affected_blocks > self.plugin.plugin_config["async-threshold"]:
+                    self.plugin.tasks[player_uuid] = {"dimension": dimension, "blocks": transformed_blocks}
+                    player.send_message(f"§aStarting async paste operation for {affected_blocks} blocks...§r")
+                else:
+                    for x, y, z, block_type, data_value in transformed_blocks:
+                        block = dimension.get_block_at(x, y, z)
+                        block.set_type(block_type)
+                        if data_value is not None:
+                            block.set_data(data_value)
+                    player.send_message(f"§aPasted {affected_blocks} blocks§r")
+
+                # Show transformation info
+                if rotation_degrees > 0 or flip_x or flip_y or flip_z or offset_x != 0 or offset_y != 0 or offset_z != 0:
+                    transforms = []
+                    if rotation_degrees > 0:
+                        transforms.append(f"rotated {rotation_degrees}°")
+                    if flip_x:
+                        transforms.append("flipped X")
+                    if flip_y:
+                        transforms.append("flipped Y")
+                    if flip_z:
+                        transforms.append("flipped Z")
+                    if offset_x != 0 or offset_y != 0 or offset_z != 0:
+                        transforms.append(f"offset ({offset_x}, {offset_y}, {offset_z})")
+                    player.send_message(f"§7Transforms: {', '.join(transforms)}§r")
+
                 self.show_clipboard_menu(player)
 
             except (ValueError, IndexError) as e:

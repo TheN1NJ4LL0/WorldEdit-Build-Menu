@@ -321,7 +321,15 @@ The main menu shows:
    - Walls (create walls around selection)
    - Overlay (place blocks on top surface)
 
-4. **Shapes**
+4. **Transform**
+   - Rotate 90° (rotate selection clockwise)
+   - Rotate 180° (rotate selection 180 degrees)
+   - Rotate 270° (rotate selection counter-clockwise)
+   - Flip X (flip selection left/right)
+   - Flip Y (flip selection up/down)
+   - Flip Z (flip selection forward/backward)
+
+5. **Shapes**
    - Sphere (solid sphere)
    - Hollow Sphere
    - Cylinder (solid cylinder)
@@ -331,18 +339,18 @@ The main menu shows:
    - Pyramid (solid pyramid)
    - Hollow Pyramid
 
-5. **Schematics**
+6. **Schematics**
    - Save Schematic (save selection to file)
    - Load & Place Schematic (load and paste)
    - List Schematics (view all saved schematics)
 
-6. **Build Areas** (Operators only)
+7. **Build Areas** (Operators only)
    - Create Build Area (from coordinates)
    - Add Builder to Area (grant access)
    - List Build Areas
    - Manage Areas
 
-7. **Undo/Redo**
+8. **Undo/Redo**
    - Undo Last Action
    - Redo Last Action
    - Shows number of available undo/redo actions
@@ -441,6 +449,47 @@ This section provides detailed command usage with examples.
 /smooth 10                    # Smooth 10 times (extreme)
 
 # Note: Requires a selection first
+```
+
+---
+
+#### **Transform Commands**
+
+**Rotate selection:**
+```bash
+/rotate <degrees>
+
+# Examples:
+/rotate 90                    # Rotate 90° clockwise
+/rotate 180                   # Rotate 180°
+/rotate 270                   # Rotate 270° clockwise (90° counter-clockwise)
+/rotate -90                   # Same as 270°
+
+# Note: Rotates around Y-axis (vertical)
+# Selection must be made first
+```
+
+**Flip selection:**
+```bash
+/flip [x|y|z]
+
+# Examples:
+/flip x                       # Flip left/right
+/flip y                       # Flip up/down
+/flip z                       # Flip forward/backward
+/flip                         # Flip along Z-axis (default)
+
+# Note: Flips the selection in place
+# Selection must be made first
+```
+
+**Example workflow:**
+```bash
+1. Select a structure with wand
+2. /rotate 90                 # Rotate it 90 degrees
+3. /flip x                    # Flip it horizontally
+4. /undo                      # Oops, undo the flip
+5. /flip z                    # Flip it the other way
 ```
 
 ---
@@ -692,6 +741,19 @@ The plugin creates `plugins/WorldEdit/config.json` on first run:
 | `/overlay <block>` | Overlay blocks on top surface | `worldedit.command.overlay` |
 | `/smooth [iterations]` | Smooth terrain in selection | `worldedit.command.smooth` |
 
+### 🔄 Transform Commands
+
+| Command | Description | Permission |
+|---------|-------------|------------|
+| `/rotate <degrees>` | Rotate selection around Y-axis (90, 180, 270) | `worldedit.command.rotate` |
+| `/flip [x\|y\|z]` | Flip selection along an axis | `worldedit.command.flip` |
+
+**Transform Notes:**
+- Rotation is around the Y-axis (vertical) in 90-degree increments
+- Flip axes: X = left/right, Y = up/down, Z = forward/backward
+- Both commands modify the selection in place
+- Use `/undo` to revert if needed
+
 ### 📋 Clipboard Commands
 
 | Command | Description | Permission |
@@ -777,6 +839,8 @@ worldedit.*                    # All permissions (operators)
     ├── worldedit.command.set
     ├── worldedit.command.replace
     ├── worldedit.command.smooth
+    ├── worldedit.command.rotate
+    ├── worldedit.command.flip
     ├── worldedit.command.copy
     ├── worldedit.command.cut
     ├── worldedit.command.paste
@@ -989,10 +1053,15 @@ permissions:
   - Per-player settings persistence
 - ✨ **NEW**: `/smoothtool` command to get the smooth tool
 - ✨ **NEW**: `/smooth [iterations]` command for manual terrain smoothing
+- ✨ **NEW**: Transform commands for rotating and flipping selections
+  - `/rotate <degrees>` - Rotate selection 90°, 180°, or 270°
+  - `/flip [x|y|z]` - Flip selection along any axis
+  - Transform menu in builder UI for easy access
 - ✨ **NEW**: Pyramid shapes - `/pyramid` and `/hpyramid` commands
 - ✨ **NEW**: Square shapes (rectangular prisms) via menu - solid and hollow
 - ✨ **NEW**: Interactive menu system completely redesigned
-  - 8 main categories: Selection, Clipboard, Editing, Shapes, Schematics, Build Areas, Undo/Redo
+  - 9 main categories: Selection, Clipboard, Editing, Transform, Shapes, Schematics, Build Areas, Undo/Redo
+  - Transform menu with rotate and flip operations
   - Advanced paste controls with rotation, flip, and offset
   - Schematic loading with full placement controls
   - Build area creation with coordinate inputs
