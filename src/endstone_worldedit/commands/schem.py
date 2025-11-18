@@ -14,6 +14,19 @@ def read_varint(stream):
         shift += 7
     return result
 
+def write_varint(value):
+    """Encode an integer as a varint and return as bytes."""
+    result = bytearray()
+    while True:
+        byte = value & 0x7F
+        value >>= 7
+        if value != 0:
+            byte |= 0x80
+        result.append(byte)
+        if value == 0:
+            break
+    return bytes(result)
+
 command = {
     "schem": {
         "description": "Manages schematics (Modern & Legacy).",
@@ -66,15 +79,16 @@ def handler(plugin, sender, args):
         min_z, max_z = min(pos1[2], pos2[2]), max(pos1[2], pos2[2])
 
         width, height, length = int(max_x - min_x + 1), int(max_y - min_y + 1), int(max_z - min_z + 1)
-        
+
         # Create a palette by finding all unique block types in the selection
         all_blocks = [str(dimension.get_block_at(x, y, z).type) for y in range(min_y, max_y + 1) for z in range(min_z, max_z + 1) for x in range(min_x, max_x + 1)]
         palette_map = {name: i for i, name in enumerate(sorted(list(set(all_blocks))))}
-        
-        # Create BlockData array using palette indices
-        block_data = bytearray(width * height * length)
-        for i, block_name in enumerate(all_blocks):
-            block_data[i] = palette_map[block_name]
+
+        # Create BlockData array using varint encoding for palette indices
+        block_data = bytearray()
+        for block_name in all_blocks:
+            palette_index = palette_map[block_name]
+            block_data.extend(write_varint(palette_index))
 
         nbt_palette = nbtlib.Compound({name: nbtlib.Int(index) for name, index in palette_map.items()})
 

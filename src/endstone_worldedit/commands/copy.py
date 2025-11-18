@@ -8,7 +8,7 @@ command = {
     }
 }
 
-@command_executor("copy", selection_required=True)
+@command_executor("copy", selection_required=True, area_check=False)
 def handler(plugin, sender, args):
     player_uuid = sender.unique_id
     pos1 = plugin.selections[player_uuid]['pos1']

@@ -10,7 +10,7 @@ command = {
     }
 }
 
-@command_executor("wand")
+@command_executor("wand", area_check=False)
 def handler(plugin, sender, args):
     sender.inventory.add_item(ItemStack("minecraft:wooden_axe"))
     sender.send_message("You have been given the wand tool.")

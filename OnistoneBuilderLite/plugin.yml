@@ -1,0 +1,88 @@
+name: OnistoneBuilderLite
+version: 1.0.0
+api-version: "0.5"
+description: A lite builder menu plugin for Endstone (Minecraft Bedrock)
+author: OnistoneBuilderLite Team
+website: https://github.com/yourusername/OnistoneBuilderLite
+
+main: OnistoneBuilderLite.main.OnistoneBuilderLite
+
+commands:
+  builder:
+    description: Open the builder menu
+    usage: |
+      /builder - Open main menu
+      /builder wand - Toggle wand tool
+      /builder pos1 - Set position 1
+      /builder pos2 - Set position 2
+      /builder undo - Undo last action
+      /builder zone here <radius> [hours] - Create builder zone
+      /builder promote <player> - Grant builder permissions (admin)
+    permission: onistone.builder.menu
+    aliases: [b, build, bmenu]
+
+permissions:
+  onistone.builder.*:
+    description: All builder permissions
+    default: true
+    children:
+      onistone.builder.menu: true
+      onistone.builder.select: true
+      onistone.builder.copy: true
+      onistone.builder.cut: true
+      onistone.builder.paste: true
+      onistone.builder.blueprint.save: true
+      onistone.builder.blueprint.shared: true
+  
+  onistone.builder.menu:
+    description: Access builder menu
+    default: true
+  
+  onistone.builder.select:
+    description: Use selection tools
+    default: true
+  
+  onistone.builder.copy:
+    description: Copy selections
+    default: true
+  
+  onistone.builder.cut:
+    description: Cut selections
+    default: true
+  
+  onistone.builder.paste:
+    description: Paste from clipboard
+    default: true
+  
+  onistone.builder.blueprint.save:
+    description: Save blueprints
+    default: true
+  
+  onistone.builder.blueprint.shared:
+    description: Access shared blueprints
+    default: true
+  
+  onistone.builder.blueprint.publish:
+    description: Publish blueprints to community
+    default: op
+  
+  onistone.builder.zone:
+    description: Create builder zones
+    default: op
+  
+  onistone.builder.bypass.zone:
+    description: Build outside zones
+    default: op
+  
+  onistone.builder.inventory.copy:
+    description: Copy block entities (chests, signs, etc.)
+    default: op
+  
+  onistone.builder.entity.copy:
+    description: Copy entities (mobs, items, etc.)
+    default: op
+  
+  onistone.builder.admin:
+    description: Admin tools and zone management
+    default: op
+

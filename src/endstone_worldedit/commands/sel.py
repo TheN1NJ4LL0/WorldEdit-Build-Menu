@@ -9,7 +9,7 @@ command = {
     }
 }
 
-@command_executor("sel")
+@command_executor("sel", area_check=False)
 def handler(plugin, sender, args):
     if not args:
         sender.send_message("Usage: /sel <clear|toggle>")

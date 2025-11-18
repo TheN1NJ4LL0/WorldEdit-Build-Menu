@@ -121,7 +121,7 @@ def translate_block_name(plugin, java_name: str) -> tuple[str, int | None]:
     # 3. Return original name if no translation is found
     return f"minecraft:{base_name}", None
 
-def command_executor(command_name, selection_required=False):
+def command_executor(command_name, selection_required=False, area_check=True):
     def decorator(func):
         @wraps(func)
         def wrapper(plugin, sender, args):
@@ -141,6 +141,42 @@ def command_executor(command_name, selection_required=False):
             if selection_required and (player_uuid not in plugin.selections or 'pos1' not in plugin.selections[player_uuid] or 'pos2' not in plugin.selections[player_uuid]):
                 sender.send_message("You must set both positions first.")
                 return False
+
+            # Check build area permissions for non-operators
+            if area_check and plugin.plugin_config.get("build_areas", {}).get("enabled", True):
+                if plugin.plugin_config.get("build_areas", {}).get("restrict_non_operators", True):
+                    if not sender.is_op:
+                        # Check if command affects blocks (requires area permission)
+                        if selection_required or command_name in ['sphere', 'hsphere', 'cyl', 'hcyl', 'paste']:
+                            location = sender.location
+                            world = sender.dimension.name
+
+                            # For selection-based commands, check if selection is in allowed area
+                            if selection_required and player_uuid in plugin.selections:
+                                pos1 = plugin.selections[player_uuid].get('pos1')
+                                pos2 = plugin.selections[player_uuid].get('pos2')
+
+                                if pos1 and pos2:
+                                    # Check both corners of selection
+                                    can_build_pos1 = plugin.build_area_manager.can_build_at(
+                                        sender.name, world, pos1[0], pos1[1], pos1[2], sender.is_op
+                                    )
+                                    can_build_pos2 = plugin.build_area_manager.can_build_at(
+                                        sender.name, world, pos2[0], pos2[1], pos2[2], sender.is_op
+                                    )
+
+                                    if not (can_build_pos1 and can_build_pos2):
+                                        sender.send_message("§cYou can only use this command in your assigned build areas.§r")
+                                        sender.send_message("§7Use §e/myareas§7 to see your build areas.§r")
+                                        return False
+                            else:
+                                # For location-based commands, check current location
+                                if not plugin.build_area_manager.can_build_at(
+                                    sender.name, world, location.x, location.y, location.z, sender.is_op
+                                ):
+                                    sender.send_message("§cYou can only use this command in your assigned build areas.§r")
+                                    sender.send_message("§7Use §e/myareas§7 to see your build areas.§r")
+                                    return False
 
             return func(plugin, sender, args)
         return wrapper

@@ -8,7 +8,7 @@ command = {
     }
 }
 
-@command_executor("pos1")
+@command_executor("pos1", area_check=False)
 def handler(plugin, sender, args):
     player_uuid = sender.unique_id
     location = sender.location

@@ -5,11 +5,16 @@ from endstone.event import (
     EventPriority,
     event_handler,
 )
+from endstone import GameMode
 import time
 import os
 import json
 from endstone.command import Command, CommandSender, CommandSenderWrapper
 from .commands import preloaded_commands, preloaded_handlers
+from .build_areas import BuildAreaManager
+from .builder_menu import MenuHandler
+from .blueprints import BlueprintManager
+from .zones import ZoneManager
 
 
 class WorldEditPlugin(Plugin):
@@ -26,11 +31,30 @@ class WorldEditPlugin(Plugin):
         self.clipboard = {}
         self.block_translation_map = {}
         self.particle_toggle = {}  # Stores player UUID -> bool
+        self.build_area_manager = None  # Initialized in on_load
+        self.player_previous_gamemode = {}  # Track player gamemodes for area transitions
+        self.menu_handler = None  # Builder menu handler
+        self.blueprint_manager = None  # Blueprint manager
+        self.zone_manager = None  # Zone manager
 
     def on_load(self):
         self.logger.info("WorldEditPlugin has been loaded!")
         self.load_config()
-        
+
+        # Initialize build area manager
+        self.build_area_manager = BuildAreaManager()
+
+        # Initialize blueprint manager
+        blueprint_folder = "plugins/WorldEdit/blueprints"
+        shared_folder = "plugins/WorldEdit/blueprints/shared"
+        self.blueprint_manager = BlueprintManager(blueprint_folder, shared_folder)
+
+        # Initialize zone manager
+        self.zone_manager = ZoneManager()
+
+        # Initialize menu handler
+        self.menu_handler = MenuHandler(self)
+
         # Create schematics directory if it doesn't exist
         schematic_path = self.plugin_config.get("schematic-path", "plugins/WorldEdit/schematics")
         if not os.path.exists(schematic_path):
@@ -105,7 +129,13 @@ class WorldEditPlugin(Plugin):
             "particle-type": "minecraft:endrod",
             "particle-density-step": 5,
             "schematic-path": "plugins/WorldEdit/schematics",
-            "block_translation_map": default_block_translation_map
+            "block_translation_map": default_block_translation_map,
+            "build_areas": {
+                "enabled": True,
+                "restrict_non_operators": True,
+                "auto_creative_mode": True,
+                "show_area_messages": True
+            }
         }
         
         if not os.path.exists(config_path):
@@ -126,6 +156,8 @@ class WorldEditPlugin(Plugin):
         self.silent_sender = CommandSenderWrapper(self.server.command_sender, on_message=lambda msg: None)
         self.server.scheduler.run_task(self, self.run_tasks, delay=1, period=1)
         self.server.scheduler.run_task(self, self.show_selection_particles, delay=20, period=20)  # Every second
+        self.server.scheduler.run_task(self, self.check_build_areas, delay=20, period=20)  # Check build areas every second
+        self.player_last_area = {}  # Track which area each player was last in
 
     def show_selection_particles(self):
         for player_uuid, selection in self.selections.items():
@@ -208,6 +240,73 @@ class WorldEditPlugin(Plugin):
                     if player:
                         player.send_message(f"§cSkipped block: {block_type} ({e})§r")
                     continue  # Skip to the next block
+
+    def check_build_areas(self):
+        """Check player positions and manage creative mode in build areas"""
+        if not self.plugin_config.get("build_areas", {}).get("enabled", True):
+            return
+
+        if not self.plugin_config.get("build_areas", {}).get("auto_creative_mode", True):
+            return
+
+        for player in self.server.online_players:
+            # Skip operators
+            if player.is_op:
+                continue
+
+            player_uuid = player.unique_id
+            player_name = player.name
+            location = player.location
+            world = player.dimension.name
+
+            # Get areas at current location
+            current_areas = self.build_area_manager.get_areas_at_location(
+                world, location.x, location.y, location.z
+            )
+
+            # Filter to areas where player is authorized
+            authorized_areas = [area for area in current_areas if area.has_builder(player_name)]
+
+            # Determine if player should be in creative mode
+            should_be_creative = any(area.creative_mode for area in authorized_areas)
+
+            # Get last known area
+            last_area_name = self.player_last_area.get(player_uuid)
+            current_area_name = authorized_areas[0].name if authorized_areas else None
+
+            # Check if player entered or left a build area
+            if last_area_name != current_area_name:
+                self.player_last_area[player_uuid] = current_area_name
+
+                if current_area_name:
+                    # Player entered a build area
+                    area = authorized_areas[0]
+                    if self.plugin_config.get("build_areas", {}).get("show_area_messages", True):
+                        player.send_message(f"§aEntered build area: §e{area.name}§r")
+                        if area.creative_mode:
+                            player.send_message("§7Creative mode enabled§r")
+
+                    # Save current gamemode if not already saved
+                    if player_uuid not in self.player_previous_gamemode:
+                        self.player_previous_gamemode[player_uuid] = player.game_mode
+
+                    # Set creative mode if area requires it
+                    if area.creative_mode and player.game_mode != GameMode.CREATIVE:
+                        player.game_mode = GameMode.CREATIVE
+
+                elif last_area_name:
+                    # Player left a build area
+                    if self.plugin_config.get("build_areas", {}).get("show_area_messages", True):
+                        player.send_message(f"§7Left build area: §e{last_area_name}§r")
+
+                    # Restore previous gamemode
+                    if player_uuid in self.player_previous_gamemode:
+                        previous_mode = self.player_previous_gamemode[player_uuid]
+                        if player.game_mode != previous_mode:
+                            player.game_mode = previous_mode
+                            if self.plugin_config.get("build_areas", {}).get("show_area_messages", True):
+                                player.send_message("§7Gamemode restored§r")
+                        del self.player_previous_gamemode[player_uuid]
 
     def on_command(self, sender: CommandSender, command: Command, args: list[str]) -> bool:
         if command.name in self.handlers:
