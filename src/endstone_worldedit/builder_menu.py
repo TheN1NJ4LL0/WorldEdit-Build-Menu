@@ -2,6 +2,7 @@
 
 from typing import TYPE_CHECKING, Optional
 from endstone.form import ActionForm, MessageForm, ModalForm, TextInput, Toggle, Dropdown
+from endstone.inventory import ItemStack
 
 from .ui_components import UIBuilder
 
@@ -30,7 +31,7 @@ class MenuHandler:
         Returns:
             True if player has both pos1 and pos2 set
         """
-        uuid = str(player.unique_id)
+        uuid = player.unique_id  # Don't convert to string
         if uuid not in self.plugin.selections:
             return False
         selection = self.plugin.selections[uuid]
@@ -85,7 +86,7 @@ class MenuHandler:
         Args:
             player: Player to show menu to
         """
-        uuid = str(player.unique_id)
+        uuid = player.unique_id
         has_pos1 = uuid in self.plugin.selections and "pos1" in self.plugin.selections[uuid]
         has_pos2 = uuid in self.plugin.selections and "pos2" in self.plugin.selections[uuid]
 
@@ -119,6 +120,7 @@ class MenuHandler:
         form.add_button("§aSet Position 1§r\n§7At your location§r")
         form.add_button("§aSet Position 2§r\n§7At your location§r")
         form.add_button("§eGet Selection Wand§r\n§7Left/Right click blocks§r")
+        form.add_button("§6Get Smooth Tool§r\n§7Right-click to smooth terrain§r")
         if has_pos1 and has_pos2:
             form.add_button("§cClear Selection§r")
         form.add_button("§7« Back to Main Menu§r")
@@ -146,7 +148,11 @@ class MenuHandler:
             elif data == 2:  # Get wand
                 player.perform_command("wand")
                 self.show_selection_menu(player)
-            elif data == 3:  # Clear or Back
+            elif data == 3:  # Get smooth tool
+                player.inventory.add_item(ItemStack("minecraft:wooden_hoe"))
+                player.send_message("§6You have been given the smooth tool! Right-click to configure and smooth terrain.§r")
+                self.show_selection_menu(player)
+            elif data == 4:  # Clear or Back
                 if has_pos1 and has_pos2:
                     if uuid in self.plugin.selections:
                         self.plugin.selections[uuid].clear()
@@ -154,7 +160,7 @@ class MenuHandler:
                     self.show_selection_menu(player)
                 else:
                     self.show_main_menu(player)
-            elif data == 4:  # Back
+            elif data == 5:  # Back
                 self.show_main_menu(player)
 
         form.on_submit = on_submit
@@ -166,7 +172,7 @@ class MenuHandler:
         Args:
             player: Player to show menu to
         """
-        uuid = str(player.unique_id)
+        uuid = player.unique_id
         has_clipboard = uuid in self.plugin.clipboard
         has_selection = uuid in self.plugin.selections and "pos1" in self.plugin.selections[uuid] and "pos2" in self.plugin.selections[uuid]
 
@@ -284,7 +290,7 @@ class MenuHandler:
         Args:
             player: Player to show menu to
         """
-        uuid = str(player.unique_id)
+        uuid = player.unique_id
         has_selection = uuid in self.plugin.selections and "pos1" in self.plugin.selections[uuid] and "pos2" in self.plugin.selections[uuid]
 
         content = "§7Block Editing Operations§r\n"
@@ -491,6 +497,10 @@ class MenuHandler:
         form.add_button("§eHollow Sphere§r\n§7Create a hollow sphere§r")
         form.add_button("§bCylinder§r\n§7Create a filled cylinder§r")
         form.add_button("§dHollow Cylinder§r\n§7Create a hollow cylinder§r")
+        form.add_button("§6Square§r\n§7Create a filled square§r")
+        form.add_button("§cHollow Square§r\n§7Create a hollow square§r")
+        form.add_button("§9Pyramid§r\n§7Create a filled pyramid§r")
+        form.add_button("§5Hollow Pyramid§r\n§7Create a hollow pyramid§r")
         form.add_button("§7« Back to Main Menu§r")
 
         def on_submit(player: "Player", data: Optional[int]):
@@ -505,6 +515,14 @@ class MenuHandler:
                 self.show_cylinder_form(player, False)
             elif data == 3:  # Hollow Cylinder
                 self.show_cylinder_form(player, True)
+            elif data == 4:  # Square
+                self.show_square_form(player, False)
+            elif data == 5:  # Hollow Square
+                self.show_square_form(player, True)
+            elif data == 6:  # Pyramid
+                self.show_pyramid_form(player, False)
+            elif data == 7:  # Hollow Pyramid
+                self.show_pyramid_form(player, True)
             else:  # Back
                 self.show_main_menu(player)
 
@@ -585,13 +603,109 @@ class MenuHandler:
         form.on_submit = on_submit
         player.send_form(form)
 
+    def show_square_form(self, player: "Player", hollow: bool) -> None:
+        """Show square creation form.
+
+        Args:
+            player: Player to show menu to
+            hollow: Whether to create hollow square
+        """
+        form = ModalForm()
+        form.title = f"§l§{'c' if hollow else '6'}{'Hollow ' if hollow else ''}Square§r"
+        form.add_control(TextInput("Block Type:", "Example: stone, glass", "stone"))
+        form.add_control(TextInput("Width (X):", "Square width", "10"))
+        form.add_control(TextInput("Height (Y):", "Square height", "5"))
+        form.add_control(TextInput("Length (Z):", "Square length", "10"))
+
+        def on_submit(player: "Player", data: Optional[str]):
+            if data is None:
+                self.show_shapes_menu(player)
+                return
+
+            import json
+            values = json.loads(data)
+
+            if not values[0] or not values[1] or not values[2] or not values[3]:
+                self.show_shapes_menu(player)
+                return
+
+            block_type = values[0].strip()
+            try:
+                width = int(values[1])
+                height = int(values[2])
+                length = int(values[3])
+
+                # Get player's current location
+                loc = player.location
+                x, y, z = int(loc.x), int(loc.y), int(loc.z)
+
+                # Directly set the selection in the plugin
+                uuid = player.unique_id
+                if uuid not in self.plugin.selections:
+                    self.plugin.selections[uuid] = {}
+
+                self.plugin.selections[uuid]['pos1'] = (x, y, z)
+                self.plugin.selections[uuid]['pos2'] = (x + width, y + height, z + length)
+
+                # Use walls for hollow, set for filled
+                if hollow:
+                    player.perform_command(f"walls {block_type}")
+                else:
+                    player.perform_command(f"set {block_type}")
+
+                player.send_message(f"§aCreated {'hollow ' if hollow else ''}square ({width}x{height}x{length}) of {block_type}!§r")
+            except ValueError:
+                player.send_message("§cInvalid dimensions! Please enter valid numbers.§r")
+            self.show_shapes_menu(player)
+
+        form.on_submit = on_submit
+        player.send_form(form)
+
+    def show_pyramid_form(self, player: "Player", hollow: bool) -> None:
+        """Show pyramid creation form.
+
+        Args:
+            player: Player to show menu to
+            hollow: Whether to create hollow pyramid
+        """
+        form = ModalForm()
+        form.title = f"§l§{'5' if hollow else '9'}{'Hollow ' if hollow else ''}Pyramid§r"
+        form.add_control(TextInput("Block Type:", "Example: stone, sandstone", "sandstone"))
+        form.add_control(TextInput("Size:", "Base size", "10"))
+
+        def on_submit(player: "Player", data: Optional[str]):
+            if data is None:
+                self.show_shapes_menu(player)
+                return
+
+            import json
+            values = json.loads(data)
+
+            if not values[0] or not values[1]:
+                self.show_shapes_menu(player)
+                return
+
+            block_type = values[0].strip()
+            try:
+                size = int(values[1])
+                # Use //pyramid command
+                cmd = f"hpyramid {block_type} {size}" if hollow else f"pyramid {block_type} {size}"
+                player.perform_command(cmd)
+                player.send_message(f"§aCreated {'hollow ' if hollow else ''}pyramid (size {size}) of {block_type}!§r")
+            except ValueError:
+                player.send_message("§cInvalid size!§r")
+            self.show_shapes_menu(player)
+
+        form.on_submit = on_submit
+        player.send_form(form)
+
     def show_schematic_menu(self, player: "Player") -> None:
         """Show schematic menu.
 
         Args:
             player: Player to show menu to
         """
-        uuid = str(player.unique_id)
+        uuid = player.unique_id
         has_selection = uuid in self.plugin.selections and "pos1" in self.plugin.selections[uuid] and "pos2" in self.plugin.selections[uuid]
 
         content = "§7Save and load schematics§r\n"
@@ -907,7 +1021,7 @@ class MenuHandler:
         Args:
             player: Player to show menu to
         """
-        uuid = str(player.unique_id)
+        uuid = player.unique_id
         has_undo = uuid in self.plugin.undo_history and len(self.plugin.undo_history[uuid]) > 0
         has_redo = uuid in self.plugin.redo_history and len(self.plugin.redo_history[uuid]) > 0
 
@@ -957,30 +1071,33 @@ class MenuHandler:
         player.send_form(form)
 
     def show_create_build_area_form(self, player: "Player") -> None:
-        """Show create build area form.
+        """Show create build area form with coordinate inputs.
 
         Args:
             player: Player to show menu to
         """
-        # Check if player has a selection
-        if not self.has_selection(player):
-            player.send_message("§cPlease make a selection first! Use the wand or //pos1 and //pos2§r")
-            self.show_build_areas_menu(player)
-            return
-
-        # Get selection info
-        uuid = str(player.unique_id)
-        selection = self.plugin.selections[uuid]
-        pos1 = selection["pos1"]
-        pos2 = selection["pos2"]
-
         form = ModalForm()
         form.title = "§l§aCreate Build Area§r"
-        form.add_control(TextInput("Area Name:", "Enter a unique name", "my_area"))
-        form.add_control(Toggle("Enable Creative Mode", True))
 
-        # Show selection info in the form
-        info = f"§7Selection: ({pos1[0]}, {pos1[1]}, {pos1[2]}) to ({pos2[0]}, {pos2[1]}, {pos2[2]})§r"
+        # Get player's current position as default
+        loc = player.location
+        default_x = str(int(loc.x))
+        default_y = str(int(loc.y))
+        default_z = str(int(loc.z))
+
+        form.add_control(TextInput("Area Name:", "Enter a unique name", "my_area"))
+
+        # Corner 1 coordinates
+        form.add_control(TextInput("Corner 1 - X:", "First corner X coordinate", default_x))
+        form.add_control(TextInput("Corner 1 - Y:", "First corner Y coordinate", default_y))
+        form.add_control(TextInput("Corner 1 - Z:", "First corner Z coordinate", default_z))
+
+        # Corner 2 coordinates
+        form.add_control(TextInput("Corner 2 - X:", "Second corner X coordinate", str(int(loc.x) + 10)))
+        form.add_control(TextInput("Corner 2 - Y:", "Second corner Y coordinate", str(int(loc.y) + 10)))
+        form.add_control(TextInput("Corner 2 - Z:", "Second corner Z coordinate", str(int(loc.z) + 10)))
+
+        form.add_control(Toggle("Enable Creative Mode", True))
 
         def on_submit(player: "Player", data: Optional[str]):
             if data is None:
@@ -996,31 +1113,33 @@ class MenuHandler:
                 return
 
             area_name = values[0].strip()
-            creative_mode = values[1] if len(values) > 1 else True
 
-            # Get current selection
-            uuid = str(player.unique_id)
-            if uuid not in self.plugin.selections:
-                player.send_message("§cSelection lost! Please select again.§r")
-                self.show_build_areas_menu(player)
-                return
+            try:
+                # Parse coordinates
+                x1 = int(values[1]) if len(values) > 1 and values[1] else 0
+                y1 = int(values[2]) if len(values) > 2 and values[2] else 0
+                z1 = int(values[3]) if len(values) > 3 and values[3] else 0
 
-            selection = self.plugin.selections[uuid]
-            if "pos1" not in selection or "pos2" not in selection:
-                player.send_message("§cSelection lost! Please select again.§r")
-                self.show_build_areas_menu(player)
-                return
+                x2 = int(values[4]) if len(values) > 4 and values[4] else 0
+                y2 = int(values[5]) if len(values) > 5 and values[5] else 0
+                z2 = int(values[6]) if len(values) > 6 and values[6] else 0
 
-            pos1 = selection["pos1"]
-            pos2 = selection["pos2"]
-            world = player.dimension.name
+                creative_mode = values[7] if len(values) > 7 else True
 
-            # Create the area
-            if self.plugin.build_area_manager.create_area(area_name, world, pos1, pos2, creative_mode):
-                player.send_message(f"§aCreated build area '§e{area_name}§a'!§r")
-                player.send_message(f"§7Use 'Add Builder to Area' to grant access to players.§r")
-            else:
-                player.send_message(f"§cBuild area '§e{area_name}§c' already exists!§r")
+                pos1 = (x1, y1, z1)
+                pos2 = (x2, y2, z2)
+                world = player.dimension.name
+
+                # Create the area
+                if self.plugin.build_area_manager.create_area(area_name, world, pos1, pos2, creative_mode):
+                    player.send_message(f"§aCreated build area '§e{area_name}§a'!§r")
+                    player.send_message(f"§7Coordinates: ({x1}, {y1}, {z1}) to ({x2}, {y2}, {z2})§r")
+                    player.send_message(f"§7Use 'Add Builder to Area' to grant access to players.§r")
+                else:
+                    player.send_message(f"§cBuild area '§e{area_name}§c' already exists!§r")
+
+            except ValueError:
+                player.send_message("§cInvalid coordinates! Please enter valid numbers.§r")
 
             self.show_build_areas_menu(player)
 
@@ -1287,6 +1406,80 @@ class MenuHandler:
             duration = float(values[2])
 
             self.handle_create_zone(player, name, radius, duration)
+
+        form.on_submit = on_submit
+        player.send_form(form)
+
+    def show_smooth_tool_menu(self, player: "Player") -> None:
+        """Show smooth tool configuration menu.
+
+        Args:
+            player: Player to show menu to
+        """
+        # Get current settings if they exist
+        uuid = player.unique_id
+        current_settings = self.plugin.smooth_tool_settings.get(uuid, {})
+        current_radius = str(current_settings.get('radius', 5))
+        current_iterations_index = {1: 0, 2: 1, 3: 2, 5: 3, 7: 4, 10: 5}.get(current_settings.get('iterations', 3), 2)
+        current_use_selection = current_settings.get('use_selection', False)
+
+        form = ModalForm()
+        form.title = "§l§6Smooth Tool Configuration§r"
+
+        # Get player's current location for default radius
+        form.add_control(TextInput("Radius:", "Area radius to smooth (1-20)", current_radius))
+        form.add_control(Dropdown("Aggressiveness:", [
+            "Gentle (1 iteration)",
+            "Light (2 iterations)",
+            "Medium (3 iterations)",
+            "Strong (5 iterations)",
+            "Very Strong (7 iterations)",
+            "Extreme (10 iterations)"
+        ], current_iterations_index))
+
+        form.add_control(Toggle("Use Current Selection", current_use_selection))
+
+        def on_submit(player: "Player", data: Optional[str]):
+            if data is None:
+                return
+
+            import json
+            values = json.loads(data)
+
+            try:
+                radius = int(values[0]) if values[0] else 5
+                if radius < 1:
+                    radius = 1
+                elif radius > 20:
+                    radius = 20
+
+                # Map dropdown to iterations
+                aggressiveness_map = [1, 2, 3, 5, 7, 10]
+                aggressiveness_index = values[1] if len(values) > 1 else 2
+                iterations = aggressiveness_map[aggressiveness_index]
+
+                use_selection = values[2] if len(values) > 2 else False
+
+                # Save settings instead of executing
+                uuid = player.unique_id
+                self.plugin.smooth_tool_settings[uuid] = {
+                    'radius': radius,
+                    'iterations': iterations,
+                    'use_selection': use_selection
+                }
+
+                # Show confirmation
+                mode_text = "current selection" if use_selection else f"{radius} block radius"
+                aggressiveness_names = ["Gentle", "Light", "Medium", "Strong", "Very Strong", "Extreme"]
+                aggressiveness_text = aggressiveness_names[aggressiveness_index]
+
+                player.send_message("§a§l✓ Smooth Tool Configured!§r")
+                player.send_message(f"§7Mode: §f{mode_text}§r")
+                player.send_message(f"§7Aggressiveness: §f{aggressiveness_text} ({iterations} iteration{'s' if iterations > 1 else ''})§r")
+                player.send_message("§6Left-click with the smooth tool to apply!§r")
+
+            except (ValueError, IndexError):
+                player.send_message("§cInvalid input! Please check your values.§r")
 
         form.on_submit = on_submit
         player.send_form(form)

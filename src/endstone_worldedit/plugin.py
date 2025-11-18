@@ -36,6 +36,7 @@ class WorldEditPlugin(Plugin):
         self.menu_handler = None  # Builder menu handler
         self.blueprint_manager = None  # Blueprint manager
         self.zone_manager = None  # Zone manager
+        self.smooth_tool_settings = {}  # Stores smooth tool settings per player UUID
 
     def on_load(self):
         self.logger.info("WorldEditPlugin has been loaded!")
@@ -326,6 +327,45 @@ class WorldEditPlugin(Plugin):
             block = event.block
             self.selections[player_uuid]["pos1"] = (block.x, block.y, block.z)
             player.send_message(f"Position 1 set to ({block.x}, {block.y}, {block.z}).")
+        elif item is not None and item.type == "minecraft:wooden_hoe":
+            # Wooden hoe - execute smooth with saved settings
+            event.cancel()
+            player_uuid = player.unique_id
+
+            # Check if player has saved settings
+            if player_uuid not in self.smooth_tool_settings:
+                player.send_message("§cNo smooth settings configured! Right-click to configure settings first.§r")
+                return
+
+            settings = self.smooth_tool_settings[player_uuid]
+            radius = settings.get('radius', 5)
+            iterations = settings.get('iterations', 3)
+            use_selection = settings.get('use_selection', False)
+
+            if use_selection:
+                # Use existing selection
+                if player_uuid not in self.selections or 'pos1' not in self.selections[player_uuid] or 'pos2' not in self.selections[player_uuid]:
+                    player.send_message("§cNo selection! Please make a selection first or configure to use radius mode.§r")
+                    return
+
+                # Execute smooth on selection
+                player.perform_command(f"smooth {iterations}")
+            else:
+                # Create circular selection around player
+                loc = player.location
+                x, y, z = int(loc.x), int(loc.y), int(loc.z)
+
+                # Set selection as a cube around player
+                if player_uuid not in self.selections:
+                    self.selections[player_uuid] = {}
+
+                self.selections[player_uuid]['pos1'] = (x - radius, y - radius, z - radius)
+                self.selections[player_uuid]['pos2'] = (x + radius, y + radius, z + radius)
+
+                # Execute smooth
+                player.perform_command(f"smooth {iterations}")
+
+            player.send_message(f"§aSmoothing terrain (radius: {radius}, iterations: {iterations})...§r")
 
     @event_handler(priority=EventPriority.HIGH)
     def on_player_interact(self, event: PlayerInteractEvent):
@@ -346,3 +386,9 @@ class WorldEditPlugin(Plugin):
                 block = event.block
                 self.selections[player_uuid]["pos2"] = (block.x, block.y, block.z)
                 player.send_message(f"Position 2 set to ({block.x}, {block.y}, {block.z}).")
+            elif item is not None and item.type == "minecraft:wooden_hoe":
+                # Wooden hoe - smooth tool
+                event.cancel()
+                self.interaction_cooldown[player_uuid] = current_time
+                if self.menu_handler:
+                    self.menu_handler.show_smooth_tool_menu(player)
