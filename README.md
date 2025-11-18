@@ -17,6 +17,10 @@
 - [Features](#-features)
 - [Installation](#-installation)
 - [Quick Start](#-quick-start)
+- [How To Use](#-how-to-use)
+  - [Tools Guide](#-tools-guide)
+  - [Menu System](#-menu-system)
+  - [Commands Reference](#-commands-reference)
 - [Configuration](#-configuration)
 - [Commands](#-commands)
 - [Permissions](#-permissions)
@@ -29,10 +33,11 @@
 
 ### 🎨 Core WorldEdit Functionality
 - **Selection Tools** - Wand-based or command-based region selection
+- **Smooth Tool** - Terrain smoothing with wooden hoe (configurable aggressiveness)
 - **Block Operations** - Set, replace, walls, overlay, and more
 - **Clipboard System** - Copy, cut, and paste structures
 - **History Management** - Unlimited undo/redo support
-- **Shape Generation** - Create spheres, cylinders (solid & hollow)
+- **Shape Generation** - Spheres, cylinders, pyramids, squares (solid & hollow)
 - **Schematic Support** - Save/load `.schem` files with Java Edition compatibility
 - **Async Operations** - Large edits processed in chunks to prevent lag
 
@@ -150,6 +155,466 @@
 
 ---
 
+## 📖 How To Use
+
+This section provides comprehensive guides for using all the tools, menus, and commands in WorldEdit.
+
+### 🔨 Tools Guide
+
+WorldEdit provides two main tools that make editing easier and more intuitive.
+
+#### **Selection Wand (Wooden Axe)**
+
+The selection wand is used to select regions for editing.
+
+**How to get it:**
+```bash
+/wand          # Get the selection wand
+# OR
+/w             # Short alias
+```
+
+**How to use it:**
+- **Left-Click** a block → Sets Position 1 (first corner)
+- **Right-Click** a block → Sets Position 2 (opposite corner)
+- You'll see particles showing your selection
+- The selection forms a cuboid (rectangular box) between the two points
+
+**Example workflow:**
+```bash
+1. Type /wand to get the wooden axe
+2. Left-click a block at one corner of your desired area
+   → Message: "Position 1 set to (100, 64, 200)"
+3. Right-click a block at the opposite corner
+   → Message: "Position 2 set to (150, 80, 250)"
+4. You now have a 51x17x51 block selection!
+5. Use any editing command: /set stone, /copy, etc.
+```
+
+**Tips:**
+- You can also set positions with commands: `/pos1` and `/pos2` (uses your current location)
+- Toggle selection particles on/off: `/sel toggle`
+- Clear your selection: `/sel clear`
+- Check selection info: `/sel`
+
+---
+
+#### **Smooth Tool (Wooden Hoe)**
+
+The smooth tool is used to smooth terrain and remove rough edges.
+
+**How to get it:**
+```bash
+/smoothtool    # Get the smooth tool
+# OR
+/st            # Short alias
+```
+
+**How to use it:**
+
+**Step 1: Configure (Right-Click)**
+1. Hold the wooden hoe
+2. Right-click anywhere
+3. Configuration menu opens with these options:
+   - **Radius** (1-20): Area size around you to smooth
+   - **Aggressiveness**: How strong the smoothing is
+     - Gentle (1 iteration) - Very subtle
+     - Light (2 iterations) - Slight smoothing
+     - Medium (3 iterations) - Balanced ⭐ Recommended
+     - Strong (5 iterations) - Heavy smoothing
+     - Very Strong (7 iterations) - Very smooth
+     - Extreme (10 iterations) - Nearly flat
+   - **Use Current Selection**: Toggle to use wand selection instead of radius
+
+4. Submit your settings
+5. You'll see: "✓ Smooth Tool Configured!"
+
+**Step 2: Execute (Left-Click)**
+1. Hold the wooden hoe
+2. Left-click anywhere (or on a block)
+3. Terrain smooths instantly with your saved settings!
+4. No menu popup - just smooth!
+
+**Example workflow:**
+```bash
+# First time setup
+1. /smoothtool                    # Get the tool
+2. Right-click                    # Configure
+   - Radius: 10
+   - Aggressiveness: Medium
+   - Use Selection: OFF
+3. Submit                         # Settings saved
+
+# Now use it repeatedly
+4. Left-click at rough terrain    # Smooths 10 block radius
+5. Move to another spot
+6. Left-click again               # Smooths again (no menu!)
+7. Keep left-clicking to smooth more areas!
+
+# Change settings anytime
+8. Right-click                    # Menu shows current settings
+9. Change to: Radius 5, Strong
+10. Submit
+11. Left-click                    # Uses new settings
+```
+
+**Two modes:**
+
+**Radius Mode** (Default):
+- Creates a cube around you based on radius
+- Perfect for smoothing terrain as you walk
+- Quick and easy
+
+**Selection Mode**:
+- Uses your wand selection (pos1/pos2)
+- Perfect for smoothing specific areas
+- More precise control
+
+**Tips:**
+- Start with "Medium" aggressiveness and adjust from there
+- Larger radius = more area smoothed at once
+- You can undo smoothing with `/undo`
+- Settings are saved per player - each player has their own configuration
+
+---
+
+### 📱 Menu System
+
+WorldEdit includes an interactive menu system for easy access to all features.
+
+#### **Main Builder Menu**
+
+**How to open:**
+```bash
+/builder       # Main command
+# OR
+/bmenu         # Alternative
+# OR
+/b             # Short alias
+```
+
+**What you'll see:**
+
+The main menu shows:
+- Your current build area (if you're in one)
+- Your selection status (pos1/pos2)
+- Quick access buttons to all features
+
+**Menu Categories:**
+
+1. **Selection Tools**
+   - Set Position 1 (at your location)
+   - Set Position 2 (at your location)
+   - Get Selection Wand (wooden axe)
+   - Get Smooth Tool (wooden hoe)
+   - Clear Selection
+
+2. **Clipboard**
+   - Copy (copy selection to clipboard)
+   - Cut (cut selection to clipboard)
+   - Paste (paste clipboard at your location)
+   - Advanced Paste (with rotation, flip, offset options)
+
+3. **Editing**
+   - Set Blocks (fill selection with a block)
+   - Replace Blocks (replace one block type with another)
+   - Walls (create walls around selection)
+   - Overlay (place blocks on top surface)
+
+4. **Shapes**
+   - Sphere (solid sphere)
+   - Hollow Sphere
+   - Cylinder (solid cylinder)
+   - Hollow Cylinder
+   - Square (solid rectangular prism)
+   - Hollow Square (hollow box)
+   - Pyramid (solid pyramid)
+   - Hollow Pyramid
+
+5. **Schematics**
+   - Save Schematic (save selection to file)
+   - Load & Place Schematic (load and paste)
+   - List Schematics (view all saved schematics)
+
+6. **Build Areas** (Operators only)
+   - Create Build Area (from coordinates)
+   - Add Builder to Area (grant access)
+   - List Build Areas
+   - Manage Areas
+
+7. **Undo/Redo**
+   - Undo Last Action
+   - Redo Last Action
+   - Shows number of available undo/redo actions
+
+**Example menu workflow:**
+```bash
+1. /builder                       # Open menu
+2. Click "Selection Tools"        # Opens selection submenu
+3. Click "Get Selection Wand"     # Receive wooden axe
+4. Close menu and select area with wand
+5. /builder                       # Open menu again
+6. Click "Editing"                # Opens editing submenu
+7. Click "Set Blocks"             # Opens form
+8. Enter "stone"                  # Block type
+9. Submit                         # Selection fills with stone!
+```
+
+---
+
+### 📝 Commands Reference
+
+This section provides detailed command usage with examples.
+
+#### **Selection Commands**
+
+**Set positions manually:**
+```bash
+/pos1          # Set position 1 at your current location
+/pos2          # Set position 2 at your current location
+
+# Example:
+# Stand at one corner
+/pos1          # → "Position 1 set to (100, 64, 200)"
+# Walk to opposite corner
+/pos2          # → "Position 2 set to (150, 80, 250)"
+```
+
+**Check selection:**
+```bash
+/sel           # Show selection info
+# Output: "Selection: 51x17x51 (44,217 blocks)"
+
+/sel clear     # Clear your selection
+/sel toggle    # Toggle selection particles on/off
+```
+
+---
+
+#### **Editing Commands**
+
+**Fill selection with blocks:**
+```bash
+/set <block>
+
+# Examples:
+/set stone                    # Fill with stone
+/set glass                    # Fill with glass
+/set minecraft:oak_planks     # Full block ID
+```
+
+**Replace blocks:**
+```bash
+/replace <from_block> <to_block>
+
+# Examples:
+/replace dirt grass           # Replace all dirt with grass
+/replace stone cobblestone    # Replace stone with cobblestone
+/replace air water            # Fill air spaces with water
+```
+
+**Create walls:**
+```bash
+/walls <block>
+
+# Example:
+/walls stone_bricks           # Create walls around selection
+# Only places blocks on the outer edges
+```
+
+**Overlay blocks:**
+```bash
+/overlay <block>
+
+# Example:
+/overlay grass                # Place grass on top surface
+# Only affects the top layer of blocks
+```
+
+**Smooth terrain:**
+```bash
+/smooth [iterations]
+
+# Examples:
+/smooth                       # Smooth once (gentle)
+/smooth 3                     # Smooth 3 times (medium)
+/smooth 10                    # Smooth 10 times (extreme)
+
+# Note: Requires a selection first
+```
+
+---
+
+#### **Clipboard Commands**
+
+**Copy selection:**
+```bash
+/copy
+
+# Example workflow:
+1. Select area with wand
+2. /copy                      # → "Copied 1,234 blocks"
+3. Walk to new location
+4. /paste                     # Paste it there
+```
+
+**Cut selection:**
+```bash
+/cut
+
+# Example:
+1. Select area with wand
+2. /cut                       # → "Cut 1,234 blocks" (area becomes air)
+3. Walk to new location
+4. /paste                     # Paste it there
+```
+
+**Paste clipboard:**
+```bash
+/paste
+
+# Example:
+1. /copy or /cut first
+2. Walk to where you want to paste
+3. /paste                     # Pastes at your location
+```
+
+---
+
+#### **Shape Commands**
+
+**Create spheres:**
+```bash
+/sphere <block> <radius>
+/hsphere <block> <radius>     # Hollow version
+
+# Examples:
+/sphere glass 10              # 10-block radius glass sphere
+/hsphere stone 15             # 15-block radius hollow stone sphere
+```
+
+**Create cylinders:**
+```bash
+/cyl <block> <radius> [height]
+/hcyl <block> <radius> [height]   # Hollow version
+
+# Examples:
+/cyl stone 5                  # 5-block radius cylinder (default height)
+/cyl stone 5 10               # 5-block radius, 10 blocks tall
+/hcyl glass 8 20              # Hollow glass cylinder
+```
+
+**Create pyramids:**
+```bash
+/pyramid <block> <size>
+/hpyramid <block> <size>      # Hollow version
+
+# Examples:
+/pyramid sandstone 10         # 10-block tall solid pyramid
+/hpyramid glass 15            # 15-block tall hollow pyramid
+```
+
+**Create squares (rectangular prisms):**
+- Use the menu: `/builder` → Shapes → Square
+- Configure width, height, length
+- Choose solid or hollow
+
+---
+
+#### **Schematic Commands**
+
+**Save selection as schematic:**
+```bash
+/schem save <name>
+
+# Example:
+1. Select your build with wand
+2. /schem save my_house       # Saves to plugins/WorldEdit/schematics/my_house.schem
+```
+
+**Load schematic:**
+```bash
+/schem load <name>
+
+# Example:
+/schem load my_house          # Loads into clipboard
+/paste                        # Paste it
+```
+
+**List schematics:**
+```bash
+/schem list
+
+# Output:
+# Available schematics:
+#   - my_house.schem
+#   - tower.schem
+#   - bridge.schem
+```
+
+---
+
+#### **History Commands**
+
+**Undo/Redo:**
+```bash
+/undo          # Undo last action
+/redo          # Redo last undone action
+
+# Example:
+/set stone     # Fill selection with stone
+/undo          # Oops! Undo it
+/redo          # Actually, redo it
+/undo          # Changed my mind again
+```
+
+---
+
+#### **Build Area Commands (Operators Only)**
+
+**Create build area:**
+```bash
+# Method 1: Using menu (recommended)
+/builder → Build Areas → Create Build Area
+# Enter coordinates for corner 1 and corner 2
+
+# Method 2: Using selection
+1. Select area with wand
+2. /area create <name>
+
+# Example:
+/area create spawn_plaza
+```
+
+**Manage builders:**
+```bash
+/area addbuilder <area_name> <player_name>
+/area removebuilder <area_name> <player_name>
+
+# Examples:
+/area addbuilder spawn_plaza Steve
+/area addbuilder spawn_plaza Alex
+/area removebuilder spawn_plaza Steve
+```
+
+**List and info:**
+```bash
+/area list                    # List all build areas
+/area info <name>             # Show area details
+/myareas                      # Show areas you can access (all players)
+/areainfo                     # Show current area info (all players)
+```
+
+**Teleport:**
+```bash
+/area tp <name>
+
+# Example:
+/area tp spawn_plaza          # Teleport to the area
+```
+
+---
+
 ## ⚙️ Configuration
 
 The plugin creates `plugins/WorldEdit/config.json` on first run:
@@ -202,6 +667,7 @@ The plugin creates `plugins/WorldEdit/config.json` on first run:
 | Command | Aliases | Description | Permission |
 |---------|---------|-------------|------------|
 | `/wand` | `/w` | Get the selection wand (wooden axe) | `worldedit.command.wand` |
+| `/smoothtool` | `/st` | Get the smooth tool (wooden hoe) | `worldedit.command.smoothtool` |
 | `/pos1` | - | Set position 1 to your location | `worldedit.command.pos1` |
 | `/pos2` | - | Set position 2 to your location | `worldedit.command.pos2` |
 | `/sel` | - | Show selection info | `worldedit.command.sel` |
@@ -212,6 +678,10 @@ The plugin creates `plugins/WorldEdit/config.json` on first run:
 - **Left-Click** a block → Set Position 1
 - **Right-Click** a block → Set Position 2
 
+**Smooth Tool Usage:**
+- **Right-Click** → Configure settings (radius, aggressiveness)
+- **Left-Click** → Execute smooth with saved settings
+
 ### ✏️ Editing Commands
 
 | Command | Description | Permission |
@@ -220,6 +690,7 @@ The plugin creates `plugins/WorldEdit/config.json` on first run:
 | `/replace <from> <to>` | Replace blocks in selection | `worldedit.command.replace` |
 | `/walls <block>` | Create walls around selection | `worldedit.command.walls` |
 | `/overlay <block>` | Overlay blocks on top surface | `worldedit.command.overlay` |
+| `/smooth [iterations]` | Smooth terrain in selection | `worldedit.command.smooth` |
 
 ### 📋 Clipboard Commands
 
@@ -244,6 +715,10 @@ The plugin creates `plugins/WorldEdit/config.json` on first run:
 | `/hsphere <block> <radius>` | Create hollow sphere | `worldedit.command.hsphere` |
 | `/cyl <block> <radius> [height]` | Create solid cylinder | `worldedit.command.cyl` |
 | `/hcyl <block> <radius> [height]` | Create hollow cylinder | `worldedit.command.hcyl` |
+| `/pyramid <block> <size>` | Create solid pyramid | `worldedit.command.pyramid` |
+| `/hpyramid <block> <size>` | Create hollow pyramid | `worldedit.command.pyramid` |
+
+**Note:** Squares (rectangular prisms) are available through the menu: `/builder` → Shapes → Square
 
 ### 💾 Schematic Commands
 
@@ -295,11 +770,13 @@ worldedit.*                    # All permissions (operators)
 │   └── worldedit.builder.menu # Builder menu access
 └── worldedit.command.*        # All command permissions
     ├── worldedit.command.wand
+    ├── worldedit.command.smoothtool
     ├── worldedit.command.pos1
     ├── worldedit.command.pos2
     ├── worldedit.command.sel
     ├── worldedit.command.set
     ├── worldedit.command.replace
+    ├── worldedit.command.smooth
     ├── worldedit.command.copy
     ├── worldedit.command.cut
     ├── worldedit.command.paste
@@ -311,6 +788,7 @@ worldedit.*                    # All permissions (operators)
     ├── worldedit.command.hsphere
     ├── worldedit.command.cyl
     ├── worldedit.command.hcyl
+    ├── worldedit.command.pyramid
     └── worldedit.command.schem
 ```
 
@@ -501,7 +979,45 @@ permissions:
 
 ## 📊 Changelog
 
-### Version 3.0.0 - Builder's Edition (Current)
+### Version 3.1.0 - Tools & Shapes Update (Current)
+
+**🎉 Major Features**
+- ✨ **NEW**: Smooth Tool system with wooden hoe for terrain smoothing
+  - Right-click to configure (radius, aggressiveness, selection mode)
+  - Left-click to execute smooth with saved settings
+  - 6 aggressiveness levels from Gentle to Extreme
+  - Per-player settings persistence
+- ✨ **NEW**: `/smoothtool` command to get the smooth tool
+- ✨ **NEW**: `/smooth [iterations]` command for manual terrain smoothing
+- ✨ **NEW**: Pyramid shapes - `/pyramid` and `/hpyramid` commands
+- ✨ **NEW**: Square shapes (rectangular prisms) via menu - solid and hollow
+- ✨ **NEW**: Interactive menu system completely redesigned
+  - 8 main categories: Selection, Clipboard, Editing, Shapes, Schematics, Build Areas, Undo/Redo
+  - Advanced paste controls with rotation, flip, and offset
+  - Schematic loading with full placement controls
+  - Build area creation with coordinate inputs
+
+**🐛 Bug Fixes**
+- 🔧 **FIXED**: Selection detection in menu (UUID key mismatch)
+- 🔧 **FIXED**: Square shape command syntax errors
+- 🔧 **FIXED**: ModalForm content attribute error
+- 🔧 **FIXED**: Build area creation now uses coordinate inputs instead of selection
+
+**🔨 Improvements**
+- 📈 Smooth tool workflow - configure once, use many times
+- 📈 All shape commands now working (spheres, cylinders, pyramids, squares)
+- 📈 Enhanced menu system with better organization
+- 📈 Improved error messages and user feedback
+- 📈 Better tool integration (wand + smooth tool)
+
+**📝 Documentation**
+- 📚 Comprehensive "How To Use" section added to README
+- 📚 Complete tools guide (Selection Wand & Smooth Tool)
+- 📚 Detailed menu system documentation
+- 📚 Commands reference with examples
+- 📚 Updated permissions list
+
+### Version 3.0.0 - Builder's Edition
 
 **🎉 Major Features**
 - ✨ **NEW**: Builder's Menu system with `/bmenu`, `/myareas`, and `/areainfo` commands
@@ -520,12 +1036,6 @@ permissions:
 - 📈 Improved configuration system with build area settings
 - 📈 Better error messages directing players to available commands
 - 📈 Optimized area checking with periodic position tracking
-
-**📝 Documentation**
-- 📚 Comprehensive README with examples and guides
-- 📚 Complete command reference with permissions
-- 📚 Configuration documentation
-- 📚 Usage examples for common scenarios
 
 ### Version 2.0.2 - Previous Release
 
