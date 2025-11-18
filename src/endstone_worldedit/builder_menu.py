@@ -124,6 +124,7 @@ class MenuHandler:
         form.add_button("§aSet Position 2§r\n§7At your location§r")
         form.add_button("§eGet Selection Wand§r\n§7Left/Right click blocks§r")
         form.add_button("§6Get Smooth Tool§r\n§7Right-click to smooth terrain§r")
+        form.add_button("§dGet Shape Tool§r\n§7Left-click to configure, right-click to spawn§r")
         if has_pos1 and has_pos2:
             form.add_button("§cClear Selection§r")
         form.add_button("§7« Back to Main Menu§r")
@@ -155,7 +156,11 @@ class MenuHandler:
                 player.inventory.add_item(ItemStack("minecraft:wooden_hoe"))
                 player.send_message("§6You have been given the smooth tool! Right-click to configure and smooth terrain.§r")
                 self.show_selection_menu(player)
-            elif data == 4:  # Clear or Back
+            elif data == 4:  # Shape Tool
+                player.inventory.add_item(ItemStack("minecraft:wooden_shovel"))
+                player.send_message("§6You have been given the shape tool! Left-click to configure shapes, right-click to spawn.§r")
+                self.show_selection_menu(player)
+            elif data == 5:  # Clear or Back
                 if has_pos1 and has_pos2:
                     if uuid in self.plugin.selections:
                         self.plugin.selections[uuid].clear()
@@ -163,7 +168,7 @@ class MenuHandler:
                     self.show_selection_menu(player)
                 else:
                     self.show_main_menu(player)
-            elif data == 5:  # Back
+            elif data == 6:  # Back
                 self.show_main_menu(player)
 
         form.on_submit = on_submit

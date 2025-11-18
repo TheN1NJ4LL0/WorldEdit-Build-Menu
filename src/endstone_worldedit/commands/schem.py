@@ -33,7 +33,9 @@ command = {
         "usages": [
             "/schem save <name: string>",
             "/schem load <name: string>",
-            "/schem list"
+            "/schem list",
+            "/schem preview <name: string>",
+            "/schem clearpreview"
         ],
         "permissions": ["worldedit.command.schem"]
     }
@@ -42,7 +44,7 @@ command = {
 @command_executor("schem")
 def handler(plugin, sender, args):
     if len(args) < 1:
-        sender.send_message("Usage: /schem <save|load|list> [name]")
+        sender.send_message("Usage: /schem <save|load|list|preview|clearpreview> [name]")
         return False
 
     sub_command = args[0].lower()
@@ -219,8 +221,71 @@ def handler(plugin, sender, args):
         execute_pass(solid_pass)
         execute_pass(dependent_pass)
 
+        # Clear preview if it exists
+        if player_uuid in plugin.schematic_previews:
+            del plugin.schematic_previews[player_uuid]
+
         sender.send_message(f"Operation complete ({len(blocks_to_change)} blocks affected).")
         return True
 
-    sender.send_message(f"Unknown sub-command '{sub_command}'. Use save, load, or list.")
+    elif sub_command == "preview":
+        if len(args) < 2:
+            sender.send_message("Usage: /schem preview <name>")
+            return False
+
+        name = args[1]
+        file_path = os.path.join(schematic_path, f"{name}.schem")
+
+        if not os.path.exists(file_path):
+            sender.send_message(f"Schematic '{name}.schem' not found.")
+            return False
+
+        try:
+            nbt_file = nbtlib.load(file_path, gzipped=True)
+            schematic = nbt_file.get('Schematic', nbt_file)
+        except Exception as e:
+            sender.send_message(f"Error reading schematic file: {e}")
+            return False
+
+        if not all(k in schematic for k in ['Width', 'Height', 'Length']):
+            sender.send_message("Invalid schematic: Missing Width, Height, or Length tags.")
+            return False
+
+        width, height, length = int(schematic['Width']), int(schematic['Height']), int(schematic['Length'])
+        player_uuid = sender.unique_id
+        player_location = sender.location
+
+        # Calculate preview bounds based on player location
+        min_x = int(player_location.x)
+        min_y = int(player_location.y)
+        min_z = int(player_location.z)
+        max_x = min_x + width - 1
+        max_y = min_y + height - 1
+        max_z = min_z + length - 1
+
+        # Store preview data
+        plugin.schematic_previews[player_uuid] = {
+            'name': name,
+            'min_pos': (min_x, min_y, min_z),
+            'max_pos': (max_x, max_y, max_z),
+            'dimensions': (width, height, length)
+        }
+
+        sender.send_message(f"§aSchematic preview enabled for '{name}'§r")
+        sender.send_message(f"§7Dimensions: {width}x{height}x{length} blocks§r")
+        sender.send_message(f"§7Position: ({min_x}, {min_y}, {min_z}) to ({max_x}, {max_y}, {max_z})§r")
+        sender.send_message(f"§6Move to adjust position, then use /schem load {name} to place§r")
+        sender.send_message(f"§6Use /schem clearpreview to remove preview§r")
+        return True
+
+    elif sub_command == "clearpreview":
+        player_uuid = sender.unique_id
+        if player_uuid in plugin.schematic_previews:
+            del plugin.schematic_previews[player_uuid]
+            sender.send_message("§aSchematic preview cleared.§r")
+        else:
+            sender.send_message("§cNo active preview to clear.§r")
+        return True
+
+    sender.send_message(f"Unknown sub-command '{sub_command}'. Use save, load, list, preview, or clearpreview.")
     return False

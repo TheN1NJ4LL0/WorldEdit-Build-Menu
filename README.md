@@ -33,12 +33,14 @@
 
 ### 🎨 Core WorldEdit Functionality
 - **Selection Tools** - Wand-based or command-based region selection
-- **Smooth Tool** - Terrain smoothing with wooden hoe (configurable aggressiveness)
+- **Smooth Tool** - Terrain smoothing with wooden hoe (sneak to configure, click to smooth at crosshair)
+- **Shape Tool** - Interactive shape spawning with wooden shovel (sneak to configure, click to spawn at crosshair)
 - **Block Operations** - Set, replace, walls, overlay, and more
 - **Clipboard System** - Copy, cut, and paste structures
 - **History Management** - Unlimited undo/redo support
 - **Shape Generation** - Spheres, cylinders, pyramids, squares (solid & hollow)
 - **Schematic Support** - Save/load `.schem` files with Java Edition compatibility
+- **Schematic Preview** - Visualize schematic placement with particle outlines before loading
 - **Async Operations** - Large edits processed in chunks to prevent lag
 
 ### 🏗️ Builder's Menu System (NEW!)
@@ -201,7 +203,7 @@ The selection wand is used to select regions for editing.
 
 #### **Smooth Tool (Wooden Hoe)**
 
-The smooth tool is used to smooth terrain and remove rough edges.
+The smooth tool is used to smooth terrain and remove rough edges at your crosshair location.
 
 **How to get it:**
 ```bash
@@ -212,11 +214,11 @@ The smooth tool is used to smooth terrain and remove rough edges.
 
 **How to use it:**
 
-**Step 1: Configure (Right-Click)**
+**Step 1: Configure (Sneak + Right-Click)**
 1. Hold the wooden hoe
-2. Right-click anywhere
+2. **Sneak (crouch)** and right-click
 3. Configuration menu opens with these options:
-   - **Radius** (1-20): Area size around you to smooth
+   - **Radius** (1-20): Area size to smooth at crosshair
    - **Aggressiveness**: How strong the smoothing is
      - Gentle (1 iteration) - Very subtle
      - Light (2 iterations) - Slight smoothing
@@ -229,45 +231,47 @@ The smooth tool is used to smooth terrain and remove rough edges.
 4. Submit your settings
 5. You'll see: "✓ Smooth Tool Configured!"
 
-**Step 2: Execute (Left-Click)**
+**Step 2: Execute (Right-Click while Standing)**
 1. Hold the wooden hoe
-2. Left-click anywhere (or on a block)
-3. Terrain smooths instantly with your saved settings!
-4. No menu popup - just smooth!
+2. Look at the terrain you want to smooth (aim with crosshair)
+3. **Right-click** (while standing, not sneaking)
+4. Terrain smooths instantly at your crosshair location!
+5. No menu popup - just smooth!
 
 **Example workflow:**
 ```bash
 # First time setup
 1. /smoothtool                    # Get the tool
-2. Right-click                    # Configure
+2. Sneak + Right-click            # Configure
    - Radius: 10
    - Aggressiveness: Medium
    - Use Selection: OFF
 3. Submit                         # Settings saved
 
 # Now use it repeatedly
-4. Left-click at rough terrain    # Smooths 10 block radius
-5. Move to another spot
-6. Left-click again               # Smooths again (no menu!)
-7. Keep left-clicking to smooth more areas!
+4. Look at rough terrain          # Aim with crosshair
+5. Right-click (standing)         # Smooths at crosshair!
+6. Look at another spot
+7. Right-click again              # Smooths there too!
+8. Keep smoothing different areas by aiming and clicking!
 
 # Change settings anytime
-8. Right-click                    # Menu shows current settings
-9. Change to: Radius 5, Strong
-10. Submit
-11. Left-click                    # Uses new settings
+9. Sneak + Right-click            # Menu shows current settings
+10. Change to: Radius 5, Strong
+11. Submit
+12. Right-click (standing)        # Uses new settings
 ```
 
 **Two modes:**
 
 **Radius Mode** (Default):
-- Creates a cube around you based on radius
-- Perfect for smoothing terrain as you walk
-- Quick and easy
+- Creates a cube at your crosshair based on radius
+- Perfect for smoothing specific terrain spots
+- Precise targeting with crosshair
 
 **Selection Mode**:
 - Uses your wand selection (pos1/pos2)
-- Perfect for smoothing specific areas
+- Perfect for smoothing large specific areas
 - More precise control
 
 **Tips:**
@@ -275,6 +279,99 @@ The smooth tool is used to smooth terrain and remove rough edges.
 - Larger radius = more area smoothed at once
 - You can undo smoothing with `/undo`
 - Settings are saved per player - each player has their own configuration
+- Aim carefully - the smooth happens exactly where you're looking!
+
+---
+
+#### **Shape Tool (Wooden Shovel)**
+
+The shape tool allows you to spawn configured shapes at your crosshair location.
+
+**How to get it:**
+```bash
+/shapetool     # Get the shape tool
+# OR
+/sht           # Short alias
+```
+
+**How to use it:**
+
+**Step 1: Configure (Sneak + Right-Click)**
+1. Hold the wooden shovel
+2. **Sneak (crouch)** and right-click
+3. Shape selection menu opens with these options:
+   - **Sphere** - Solid sphere
+   - **Hollow Sphere** - Hollow sphere shell
+   - **Cylinder** - Solid cylinder
+   - **Hollow Cylinder** - Hollow cylinder shell
+   - **Square** - Solid rectangular prism (cuboid)
+   - **Hollow Square** - Hollow box
+   - **Pyramid** - Solid pyramid
+   - **Hollow Pyramid** - Hollow pyramid shell
+
+4. Select a shape type
+5. Configure the shape:
+   - **Block Type**: What block to build with (e.g., stone, glass)
+   - **Size parameters**: Radius, height, width, etc. (depends on shape)
+6. Submit your settings
+7. You'll see: "Shape tool configured: [Shape Type]"
+
+**Step 2: Spawn Shape (Right-Click while Standing)**
+1. Hold the wooden shovel
+2. Look where you want to spawn the shape (aim with crosshair)
+3. **Right-click** (while standing, not sneaking)
+4. Shape spawns instantly at your crosshair location!
+
+**Example workflow:**
+```bash
+# Create a glass sphere
+1. /shapetool                     # Get the tool
+2. Sneak + Right-click            # Open menu
+3. Select "Sphere"                # Choose shape type
+4. Configure:
+   - Block Type: glass
+   - Radius: 10
+5. Submit                         # Settings saved
+
+# Spawn it
+6. Look at where you want it     # Aim with crosshair
+7. Right-click (standing)         # Spawns glass sphere!
+
+# Spawn more in different locations
+8. Look at another spot
+9. Right-click                    # Another sphere!
+10. Keep spawning by aiming and clicking!
+
+# Change to a different shape
+11. Sneak + Right-click           # Open menu
+12. Select "Hollow Cylinder"      # New shape
+13. Configure:
+    - Block Type: stone_bricks
+    - Radius: 5
+    - Height: 20
+14. Submit
+15. Right-click (standing)        # Spawns cylinder!
+```
+
+**Available Shapes:**
+
+| Shape | Parameters | Description |
+|-------|------------|-------------|
+| Sphere | Block, Radius | Solid sphere centered at crosshair |
+| Hollow Sphere | Block, Radius | Hollow sphere shell |
+| Cylinder | Block, Radius, Height | Solid cylinder (vertical) |
+| Hollow Cylinder | Block, Radius, Height | Hollow cylinder shell |
+| Square | Block, Width, Height, Length | Solid rectangular prism |
+| Hollow Square | Block, Width, Height, Length | Hollow box |
+| Pyramid | Block, Size | Solid pyramid |
+| Hollow Pyramid | Block, Size | Hollow pyramid shell |
+
+**Tips:**
+- Shapes spawn at your crosshair - aim carefully!
+- You can undo shape placement with `/undo`
+- Settings are saved per player - each player has their own configuration
+- Great for quickly building structures without selections
+- Combine different shapes to create complex structures
 
 ---
 
@@ -581,13 +678,39 @@ This section provides detailed command usage with examples.
 2. /schem save my_house       # Saves to plugins/WorldEdit/schematics/my_house.schem
 ```
 
+**Preview schematic before loading:**
+```bash
+/schem preview <name>
+
+# Example:
+/schem preview my_house       # Shows particle outline where it will be placed
+# Output:
+# Schematic preview enabled for 'my_house'
+# Dimensions: 20x15x25 blocks
+# Position: (100, 64, 200) to (120, 79, 225)
+# Move to adjust position, then use /schem load my_house to place
+# Use /schem clearpreview to remove preview
+
+# The preview follows you as you move!
+# Golden/cyan particles show exactly where the schematic will be placed
+# Walk around to find the perfect spot
+```
+
 **Load schematic:**
 ```bash
 /schem load <name>
 
 # Example:
-/schem load my_house          # Loads into clipboard
-/paste                        # Paste it
+/schem load my_house          # Loads and places at your location
+# Preview automatically clears after loading
+```
+
+**Clear preview:**
+```bash
+/schem clearpreview
+
+# Example:
+/schem clearpreview           # Removes the particle preview
 ```
 
 **List schematics:**
@@ -599,6 +722,23 @@ This section provides detailed command usage with examples.
 #   - my_house.schem
 #   - tower.schem
 #   - bridge.schem
+```
+
+**Complete workflow with preview:**
+```bash
+# 1. Preview the schematic
+/schem preview my_castle
+
+# 2. Walk around - the preview follows you!
+#    Golden particles show where it will be placed
+
+# 3. Find the perfect spot
+
+# 4. Load it
+/schem load my_castle         # Places exactly where preview showed
+
+# Alternative: Clear preview without loading
+/schem clearpreview           # Remove preview if you change your mind
 ```
 
 ---
@@ -717,6 +857,7 @@ The plugin creates `plugins/WorldEdit/config.json` on first run:
 |---------|---------|-------------|------------|
 | `/wand` | `/w` | Get the selection wand (wooden axe) | `worldedit.command.wand` |
 | `/smoothtool` | `/st` | Get the smooth tool (wooden hoe) | `worldedit.command.smoothtool` |
+| `/shapetool` | `/sht` | Get the shape tool (wooden shovel) | `worldedit.command.shapetool` |
 | `/pos1` | - | Set position 1 to your location | `worldedit.command.pos1` |
 | `/pos2` | - | Set position 2 to your location | `worldedit.command.pos2` |
 | `/sel` | - | Show selection info | `worldedit.command.sel` |
@@ -728,8 +869,12 @@ The plugin creates `plugins/WorldEdit/config.json` on first run:
 - **Right-Click** a block → Set Position 2
 
 **Smooth Tool Usage:**
-- **Right-Click** → Configure settings (radius, aggressiveness)
-- **Left-Click** → Execute smooth with saved settings
+- **Sneak + Right-Click** → Configure settings (radius, aggressiveness)
+- **Right-Click** (standing) → Execute smooth at crosshair
+
+**Shape Tool Usage:**
+- **Sneak + Right-Click** → Configure shape (type, block, size)
+- **Right-Click** (standing) → Spawn shape at crosshair
 
 ### ✏️ Editing Commands
 
@@ -789,6 +934,14 @@ The plugin creates `plugins/WorldEdit/config.json` on first run:
 | `/schem save <name>` | Save selection as schematic | `worldedit.command.schem` |
 | `/schem load <name>` | Load schematic at your location | `worldedit.command.schem` |
 | `/schem list` | List available schematics | `worldedit.command.schem` |
+| `/schem preview <name>` | Preview schematic placement with particles | `worldedit.command.schem` |
+| `/schem clearpreview` | Clear active schematic preview | `worldedit.command.schem` |
+
+**Schematic Preview:**
+- Preview shows golden/cyan particles outlining where the schematic will be placed
+- Preview follows your position as you move - find the perfect spot!
+- Automatically clears when you load the schematic
+- Different particle color than selection (easy to distinguish)
 
 ### 🏗️ Build Area Commands (Operators)
 
@@ -1043,7 +1196,44 @@ permissions:
 
 ## 📊 Changelog
 
-### Version 3.1.0 - Tools & Shapes Update (Current)
+### Version 3.2.0 - Interactive Tools & Preview Update (Current)
+
+**🎉 Major Features**
+- ✨ **NEW**: Shape Tool system with wooden shovel for interactive shape spawning
+  - Sneak + Right-click to configure shape (type, block, size)
+  - Right-click (standing) to spawn shape at crosshair location
+  - 8 shape types: Sphere, Hollow Sphere, Cylinder, Hollow Cylinder, Square, Hollow Square, Pyramid, Hollow Pyramid
+  - Per-player settings persistence
+  - Crosshair-based targeting for precise placement
+- ✨ **NEW**: `/shapetool` (alias `/sht`) command to get the shape tool
+- ✨ **NEW**: Schematic Preview system for precise placement
+  - `/schem preview <name>` - Shows particle outline of schematic
+  - Preview follows player position in real-time
+  - Golden/cyan soul fire flame particles (distinct from selection particles)
+  - Shows dimensions and coordinates
+  - `/schem clearpreview` - Remove active preview
+  - Auto-clears when schematic is loaded
+- ✨ **UPDATED**: Smooth Tool behavior changed to match Shape Tool
+  - **Sneak + Right-click** to configure (was: Right-click)
+  - **Right-click (standing)** to execute smooth at crosshair (was: Left-click)
+  - Crosshair-based targeting for precise smoothing
+  - Settings still persist per player
+
+**🔨 Improvements**
+- 📈 Consistent tool interaction pattern across all tools (sneak to configure, click to execute)
+- 📈 Crosshair-based targeting for smooth and shape tools - aim where you want to build!
+- 📈 Schematic placement workflow - preview before loading for perfect positioning
+- 📈 Better visual feedback with distinct particle types for different features
+- 📈 Improved tool usability - configure once, use many times
+
+**📝 Documentation**
+- 📚 Added Shape Tool comprehensive guide
+- 📚 Updated Smooth Tool documentation with new sneak/stand behavior
+- 📚 Added Schematic Preview documentation with examples
+- 📚 Updated command reference tables
+- 📚 Added workflow examples for new features
+
+### Version 3.1.0 - Tools & Shapes Update
 
 **🎉 Major Features**
 - ✨ **NEW**: Smooth Tool system with wooden hoe for terrain smoothing
