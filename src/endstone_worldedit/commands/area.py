@@ -3,15 +3,6 @@ from endstone_worldedit.utils import command_executor
 command = {
     "area": {
         "description": "Manages build areas for builders.",
-        "usages": [
-            "/area create <name: string>",
-            "/area delete <name: string>",
-            "/area list",
-            "/area info <name: string>",
-            "/area addbuilder <area: string> <player: string>",
-            "/area removebuilder <area: string> <player: string>",
-            "/area tp <name: string>"
-        ],
         "permissions": ["worldedit.admin.area"]
     }
 }

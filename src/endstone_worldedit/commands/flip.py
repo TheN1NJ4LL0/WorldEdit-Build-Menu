@@ -3,7 +3,6 @@ from endstone_worldedit.utils import command_executor
 command = {
     "flip": {
         "description": "Flips the selection along an axis.",
-        "usages": ["/flip [x|y|z]"],
         "permissions": ["worldedit.command.flip"]
     }
 }

@@ -4,7 +4,6 @@ from endstone_worldedit.utils import command_executor
 command = {
     "cyl": {
         "description": "Creates a solid cylinder.",
-        "usages": ["/cyl <block: block> <radius: int> [height: int]"],
         "permissions": ["worldedit.command.cylinder"]
     }
 }

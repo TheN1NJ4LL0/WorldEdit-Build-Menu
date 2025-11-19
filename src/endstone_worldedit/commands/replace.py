@@ -3,7 +3,6 @@ from endstone_worldedit.utils import command_executor
 command = {
     "replace": {
         "description": "Replaces a specific block within the selection.",
-        "usages": ["/replace <from_block: block> <to_block: block>"],
         "permissions": ["worldedit.command.replace"]
     }
 }

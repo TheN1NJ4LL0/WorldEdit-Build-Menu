@@ -3,7 +3,6 @@ from endstone_worldedit.utils import command_executor
 command = {
     "cut": {
         "description": "Cuts the selection and replaces it with air.",
-        "usages": ["/cut"],
         "permissions": ["worldedit.command.cut"]
     }
 }

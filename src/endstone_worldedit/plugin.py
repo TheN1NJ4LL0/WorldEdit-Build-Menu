@@ -369,9 +369,14 @@ class WorldEditPlugin(Plugin):
                         del self.player_previous_gamemode[player_uuid]
 
     def on_command(self, sender: CommandSender, command: Command, args: list[str]) -> bool:
+        # Debug logging for all commands
+        self.logger.info(f"[COMMAND DEBUG] Command: {command.name}, Args: {args}, Sender: {sender.name}")
+
         if command.name in self.handlers:
             handler = self.handlers[command.name]
             return handler(self, sender, args)
+        else:
+            self.logger.warning(f"[COMMAND DEBUG] No handler found for command: {command.name}")
         return False
 
     @event_handler(priority=EventPriority.HIGH)

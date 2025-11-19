@@ -4,7 +4,6 @@ from endstone_worldedit.utils import command_executor
 command = {
     "sphere": {
         "description": "Creates a solid sphere.",
-        "usages": ["/sphere <block: block> <radius: int>"],
         "permissions": ["worldedit.command.sphere"]
     }
 }

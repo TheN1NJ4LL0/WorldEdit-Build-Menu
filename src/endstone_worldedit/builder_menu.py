@@ -213,21 +213,30 @@ class MenuHandler:
                     player.send_message("§cYou need to make a selection first!§r")
                     self.show_clipboard_menu(player)
                     return
-                player.perform_command("copy")
+                # Call copy handler directly
+                self.plugin.logger.info(f"[BUILDER MENU DEBUG] Simple Copy - Calling copy handler")
+                from endstone_worldedit.commands.copy import handler as copy_handler
+                copy_handler(self.plugin, player, [])
                 self.show_clipboard_menu(player)
             elif data == 1:  # Cut
                 if not has_selection:
                     player.send_message("§cYou need to make a selection first!§r")
                     self.show_clipboard_menu(player)
                     return
-                player.perform_command("cut")
+                # Call cut handler directly
+                self.plugin.logger.info(f"[BUILDER MENU DEBUG] Cut - Calling cut handler")
+                from endstone_worldedit.commands.cut import handler as cut_handler
+                cut_handler(self.plugin, player, [])
                 self.show_clipboard_menu(player)
             elif data == 2:  # Paste
                 if not has_clipboard:
                     player.send_message("§cYour clipboard is empty!§r")
                     self.show_clipboard_menu(player)
                     return
-                player.perform_command("paste")
+                # Call paste handler directly
+                self.plugin.logger.info(f"[BUILDER MENU DEBUG] Simple Paste - Calling paste handler")
+                from endstone_worldedit.commands.paste import handler as paste_handler
+                paste_handler(self.plugin, player, [])
                 self.show_clipboard_menu(player)
             elif data == 3:  # Copy Options
                 if not has_selection:
@@ -276,17 +285,19 @@ class MenuHandler:
             copy_entities = values[1] if len(values) > 1 else False
             copy_biomes = values[2] if len(values) > 2 else False
 
-            # Build command with flags
-            cmd = "copy"
+            # Build arguments list
+            copy_args = []
             if include_air:
-                cmd += " -a"
+                copy_args.append("-a")
             if copy_entities:
-                cmd += " -e"
+                copy_args.append("-e")
             if copy_biomes:
-                cmd += " -b"
+                copy_args.append("-b")
 
-            player.perform_command(cmd)
-            player.send_message("§aCopied with options!§r")
+            # Call copy handler directly
+            self.plugin.logger.info(f"[BUILDER MENU DEBUG] Copy Options - Calling copy handler with args: {copy_args}")
+            from endstone_worldedit.commands.copy import handler as copy_handler
+            copy_handler(self.plugin, player, copy_args)
             self.show_clipboard_menu(player)
 
         form.on_submit = on_submit
@@ -520,28 +531,34 @@ class MenuHandler:
                 return
 
             if data == 0:  # Rotate 90
-                player.perform_command("rotate 90")
-                player.send_message("§aRotated selection 90° clockwise§r")
+                from endstone_worldedit.commands.rotate import handler as rotate_handler
+                self.plugin.logger.info(f"[BUILDER MENU DEBUG] Rotate 90 - Calling rotate handler")
+                rotate_handler(self.plugin, player, ["90"])
                 self.show_transform_menu(player)
             elif data == 1:  # Rotate 180
-                player.perform_command("rotate 180")
-                player.send_message("§aRotated selection 180°§r")
+                from endstone_worldedit.commands.rotate import handler as rotate_handler
+                self.plugin.logger.info(f"[BUILDER MENU DEBUG] Rotate 180 - Calling rotate handler")
+                rotate_handler(self.plugin, player, ["180"])
                 self.show_transform_menu(player)
             elif data == 2:  # Rotate 270
-                player.perform_command("rotate 270")
-                player.send_message("§aRotated selection 270° clockwise§r")
+                from endstone_worldedit.commands.rotate import handler as rotate_handler
+                self.plugin.logger.info(f"[BUILDER MENU DEBUG] Rotate 270 - Calling rotate handler")
+                rotate_handler(self.plugin, player, ["270"])
                 self.show_transform_menu(player)
             elif data == 3:  # Flip X
-                player.perform_command("flip x")
-                player.send_message("§aFlipped selection along X-axis (left/right)§r")
+                from endstone_worldedit.commands.flip import handler as flip_handler
+                self.plugin.logger.info(f"[BUILDER MENU DEBUG] Flip X - Calling flip handler")
+                flip_handler(self.plugin, player, ["x"])
                 self.show_transform_menu(player)
             elif data == 4:  # Flip Y
-                player.perform_command("flip y")
-                player.send_message("§aFlipped selection along Y-axis (up/down)§r")
+                from endstone_worldedit.commands.flip import handler as flip_handler
+                self.plugin.logger.info(f"[BUILDER MENU DEBUG] Flip Y - Calling flip handler")
+                flip_handler(self.plugin, player, ["y"])
                 self.show_transform_menu(player)
             elif data == 5:  # Flip Z
-                player.perform_command("flip z")
-                player.send_message("§aFlipped selection along Z-axis (forward/backward)§r")
+                from endstone_worldedit.commands.flip import handler as flip_handler
+                self.plugin.logger.info(f"[BUILDER MENU DEBUG] Flip Z - Calling flip handler")
+                flip_handler(self.plugin, player, ["z"])
                 self.show_transform_menu(player)
             elif data == 6:  # Back
                 self.show_main_menu(player)
@@ -830,12 +847,15 @@ class MenuHandler:
             filename = values[0].strip()
             include_air = values[1] if len(values) > 1 else False
 
-            # Build command with air flag if needed
-            cmd = f"schem save {filename}"
+            # Build arguments list
+            save_args = ["save", filename]
             if include_air:
-                cmd += " -a"  # Add air flag
+                save_args.append("-a")
 
-            player.perform_command(cmd)
+            # Call schem handler directly
+            self.plugin.logger.info(f"[BUILDER MENU DEBUG] Save Schematic - Calling schem handler with args: {save_args}")
+            from endstone_worldedit.commands.schem import handler as schem_handler
+            schem_handler(self.plugin, player, save_args)
             self.show_schematic_menu(player)
 
         form.on_submit = on_submit
@@ -893,8 +913,10 @@ class MenuHandler:
                 return
 
             filename = values[0].strip()
-            player.perform_command(f"schem load {filename}")
-            player.send_message("§aSchematic loaded to clipboard! Use Paste Options to place it.§r")
+            # Load to clipboard using direct handler call
+            self.plugin.logger.info(f"[BUILDER MENU DEBUG] Quick Load - Calling schem handler with args: ['load', '{filename}', '-c']")
+            from endstone_worldedit.commands.schem import handler as schem_handler
+            schem_handler(self.plugin, player, ["load", filename, "-c"])
             self.show_schematic_menu(player)
 
         form.on_submit = on_submit
@@ -986,42 +1008,46 @@ class MenuHandler:
                 paste_entities = values[10] if len(values) > 10 else True
                 paste_biomes = values[11] if len(values) > 11 else False
 
-                # First, load the schematic
-                player.perform_command(f"schem load {filename}")
+                # First, load the schematic to clipboard using direct handler call
+                self.plugin.logger.info(f"[BUILDER MENU DEBUG] Load & Place - Calling schem handler with args: ['load', '{filename}', '-c']")
+                from endstone_worldedit.commands.schem import handler as schem_handler
+                schem_handler(self.plugin, player, ["load", filename, "-c"])
 
-                # Wait a moment, then paste with options
-                # Build paste command
-                cmd = "paste"
+                # Build paste command arguments
+                paste_args = []
 
                 # Add rotation
                 if rotation_degrees > 0:
-                    cmd += f" -r {rotation_degrees}"
+                    paste_args.extend(["-r", str(rotation_degrees)])
 
                 # Add flips
                 if flip_x:
-                    cmd += " -fx"
+                    paste_args.append("-fx")
                 if flip_y:
-                    cmd += " -fy"
+                    paste_args.append("-fy")
                 if flip_z:
-                    cmd += " -fz"
+                    paste_args.append("-fz")
 
                 # Add offset
                 if offset_x != 0 or offset_y != 0 or offset_z != 0:
-                    cmd += f" -o {offset_x},{offset_y},{offset_z}"
+                    paste_args.extend(["-o", f"{offset_x},{offset_y},{offset_z}"])
 
                 # Add other options
                 if include_air:
-                    cmd += " -a"
+                    paste_args.append("-a")
                 if paste_entities:
-                    cmd += " -e"
+                    paste_args.append("-e")
                 if paste_biomes:
-                    cmd += " -b"
+                    paste_args.append("-b")
 
-                # Execute paste command
-                player.perform_command(cmd)
+                # Execute paste command directly through handler
+                self.plugin.logger.info(f"[BUILDER MENU DEBUG] Load & Place - Calling paste handler with args: {paste_args}")
+                from endstone_worldedit.commands.paste import handler as paste_handler
+                paste_handler(self.plugin, player, paste_args)
 
                 placement_text = ["at your position", "3 blocks in front", "5 blocks in front", "10 blocks in front", f"at offset ({offset_x}, {offset_y}, {offset_z})"][placement]
-                player.send_message(f"§aSchematic '{filename}' placed {placement_text} with {rotation_degrees}° rotation!§r")
+                rotation_text = f" with {rotation_degrees}° rotation" if rotation_degrees > 0 else ""
+                player.send_message(f"§aSchematic '{filename}' placed {placement_text}{rotation_text}!§r")
                 self.show_schematic_menu(player)
 
             except (ValueError, IndexError) as e:

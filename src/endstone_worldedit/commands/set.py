@@ -3,7 +3,6 @@ from endstone_worldedit.utils import command_executor
 command = {
     "set": {
         "description": "Fills the selection with a block.",
-        "usages": ["/set <block: block>"],
         "permissions": ["worldedit.command.set"]
     }
 }

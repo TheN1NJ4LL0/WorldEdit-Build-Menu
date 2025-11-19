@@ -3,7 +3,6 @@ from endstone_worldedit.utils import command_executor
 command = {
     "rotate": {
         "description": "Rotates the selection around the Y-axis (vertical).",
-        "usages": ["/rotate <degrees>"],
         "permissions": ["worldedit.command.rotate"]
     }
 }

@@ -4,7 +4,6 @@ from endstone_worldedit.utils import command_executor
 command = {
     "hcyl": {
         "description": "Creates a hollow cylinder.",
-        "usages": ["/hcyl <block: block> <radius: int> [height: int]"],
         "permissions": ["worldedit.command.cylinder"]
     }
 }

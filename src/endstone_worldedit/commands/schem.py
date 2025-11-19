@@ -2,6 +2,7 @@ import os
 import nbtlib
 from nbtlib.tag import *
 from ..utils import command_executor, LEGACY_ID_TO_BEDROCK_NAME, translate_block_name
+from ..structure_utils import structure_save, structure_load, structure_exists
 
 def read_varint(stream):
     result = 0
@@ -30,24 +31,22 @@ def write_varint(value):
 command = {
     "schem": {
         "description": "Manages schematics (Modern & Legacy).",
-        "usages": [
-            "/schem save <name: string>",
-            "/schem load <name: string>",
-            "/schem list",
-            "/schem preview <name: string>",
-            "/schem clearpreview"
-        ],
         "permissions": ["worldedit.command.schem"]
     }
 }
 
 @command_executor("schem")
 def handler(plugin, sender, args):
+    # Debug logging
+    plugin.logger.info(f"[SCHEM DEBUG] Player: {sender.name}, Args received: {args}")
+    plugin.logger.info(f"[SCHEM DEBUG] Args type: {type(args)}, Args length: {len(args)}")
+
     if len(args) < 1:
         sender.send_message("Usage: /schem <save|load|list|preview|clearpreview> [name]")
         return False
 
     sub_command = args[0].lower()
+    plugin.logger.info(f"[SCHEM DEBUG] Sub-command: {sub_command}")
     schematic_path = plugin.plugin_config.get("schematic-path", "plugins/WorldEdit/schematics")
 
     if sub_command == "list":
@@ -106,15 +105,85 @@ def handler(plugin, sender, args):
         
         file_path = os.path.join(schematic_path, f"{name}.schem")
         schematic_nbt.save(file_path, gzipped=True)
-        sender.send_message(f"Schematic '{name}.schem' saved in modern format.")
+        sender.send_message(f"§aSchematic '{name}.schem' saved successfully!§r")
+
+        # ALSO save as .mcstructure using /structure save command to preserve containers
+        plugin.logger.info(f"[SCHEM SAVE] Also saving as .mcstructure to preserve containers...")
+        try:
+            structure_success = structure_save(
+                plugin,
+                sender,
+                name,  # structure name
+                (min_x, min_y, min_z),  # pos1
+                (max_x, max_y, max_z),  # pos2
+                include_entities=True,
+                include_blocks=True
+            )
+
+            if structure_success:
+                sender.send_message(f"§a✓ Also saved as '{name}.mcstructure' with container data!§r")
+                sender.send_message(f"§7Containers (chests, furnaces, etc.) will be preserved!§r")
+            else:
+                sender.send_message(f"§eNote: Structure save failed, only .schem saved (no containers)§r")
+        except Exception as e:
+            plugin.logger.error(f"[SCHEM SAVE] Structure save error: {e}")
+            sender.send_message(f"§eNote: Only .schem saved (containers not preserved)§r")
+
         return True
 
     elif sub_command == "load":
         if len(args) < 2:
-            sender.send_message("Usage: /schem load <name>")
+            sender.send_message("Usage: /schem load <name> [-c]")
+            sender.send_message("  -c: Load to clipboard instead of placing")
             return False
-        
+
         name = args[1]
+        # Check for -c flag (clipboard mode)
+        load_to_clipboard = "-c" in args or "--clipboard" in args
+        plugin.logger.info(f"[SCHEM DEBUG] Loading schematic: {name}, Clipboard mode: {load_to_clipboard}")
+
+        # Try to use .mcstructure file if it exists (preserves containers)
+        # Note: We always attempt this, and fall back to .schem if it fails
+        try:
+            plugin.logger.info(f"[SCHEM LOAD] Attempting to load structure '{name}' (for container preservation)...")
+
+            if load_to_clipboard:
+                # For clipboard mode, load the .schem file normally
+                # We'll handle structure-based clipboard in copy command instead
+                plugin.logger.info(f"[SCHEM LOAD] Clipboard mode - will load .schem file")
+                # Fall through to .schem loading below
+            else:
+                # Try direct placement using structure load
+                player_location = sender.location
+                x, y, z = int(player_location.x), int(player_location.y), int(player_location.z)
+
+                # Attempt structure load
+                plugin.logger.info(f"[SCHEM LOAD] Attempting structure load at ({x}, {y}, {z})")
+                success = structure_load(
+                    plugin,
+                    sender,
+                    name,
+                    (x, y, z),
+                    rotation=0,
+                    mirror="none",
+                    animation_mode="all_at_once",
+                    animation_seconds=0.0,
+                    include_entities=True,
+                    include_blocks=True
+                )
+
+                if success:
+                    sender.send_message(f"§aSchematic '{name}' loaded!§r")
+                    sender.send_message(f"§7Note: If this was saved with containers, they should be preserved!§r")
+                    return True
+                else:
+                    plugin.logger.info(f"[SCHEM LOAD] Structure load failed, falling back to .schem file")
+                    sender.send_message(f"§eStructure load failed, using .schem file instead...§r")
+                    # Fall through to .schem loading below
+        except Exception as e:
+            plugin.logger.error(f"[SCHEM LOAD] Structure load error: {e}")
+            # Fall through to .schem loading below
+
         file_path = os.path.join(schematic_path, f"{name}.schem")
 
         if not os.path.exists(file_path):
@@ -133,33 +202,34 @@ def handler(plugin, sender, args):
             return False
 
         width, height, length = schematic['Width'], schematic['Height'], schematic['Length']
-        blocks_to_change = []
         player_uuid, dimension, player_location = sender.unique_id, sender.dimension, sender.location
+
+        # Prepare blocks list (relative coordinates for clipboard, absolute for direct placement)
+        blocks_list = []
 
         # Modern schematics (Sponge v2 format with Palette)
         if 'Palette' in schematic and 'BlockData' in schematic:
-            sender.send_message("Loading modern schematic (Palette)...")
+            if not load_to_clipboard:
+                sender.send_message("Loading modern schematic (Palette)...")
             id_to_name = {v: k for k, v in schematic['Palette'].items()}
             block_data_stream = iter(schematic['BlockData'])
-            
+
             for y in range(height):
                 for z in range(length):
                     for x in range(width):
                         palette_index = read_varint(block_data_stream)
                         java_name = id_to_name.get(palette_index, "minecraft:air")
                         block_name, data_value = translate_block_name(plugin, java_name)
-                        
-                        if block_name != "minecraft:air":
-                            # Ensure all coordinates are integers for precise placement
-                            target_x = int(player_location.x) + x
-                            target_y = int(player_location.y) + y
-                            target_z = int(player_location.z) + z
-                            blocks_to_change.append((target_x, target_y, target_z, block_name, data_value))
+
+                        # Store blocks with relative coordinates
+                        blocks_list.append((x, y, z, block_name, data_value))
+
         # Legacy schematics (MCEdit format with numeric IDs)
         elif 'Blocks' in schematic:
-            sender.send_message("Loading legacy schematic (Block IDs)...")
+            if not load_to_clipboard:
+                sender.send_message("Loading legacy schematic (Block IDs)...")
             block_ids = schematic['Blocks']
-            
+
             for y in range(height):
                 for z in range(length):
                     for x in range(width):
@@ -167,15 +237,39 @@ def handler(plugin, sender, args):
                         java_name = LEGACY_ID_TO_BEDROCK_NAME.get(str(block_ids[index]), "minecraft:air")
                         block_name, data_value = translate_block_name(plugin, java_name)
 
-                        if block_name != "minecraft:air":
-                            # Ensure all coordinates are integers for precise placement
-                            target_x = int(player_location.x) + x
-                            target_y = int(player_location.y) + y
-                            target_z = int(player_location.z) + z
-                            blocks_to_change.append((target_x, target_y, target_z, block_name, data_value))
+                        # Store blocks with relative coordinates
+                        blocks_list.append((x, y, z, block_name, data_value))
         else:
             sender.send_message("Unsupported schematic format. Missing Palette/BlockData or Blocks tags.")
             return False
+
+        if not blocks_list:
+            sender.send_message("Schematic is empty or only contains air.")
+            return True
+
+        # If loading to clipboard, store relative coordinates
+        if load_to_clipboard:
+            # Convert to clipboard format (relative to player position)
+            clipboard_blocks = []
+            for x, y, z, block_name, data_value in blocks_list:
+                # Store as relative coordinates from origin (0,0,0)
+                clipboard_blocks.append((x, y, z, block_name, data_value))
+
+            plugin.clipboard[player_uuid] = clipboard_blocks
+            sender.send_message(f"§aSchematic '{name}' loaded to clipboard ({len(clipboard_blocks)} blocks)§r")
+            sender.send_message(f"§7Dimensions: {width}x{height}x{length}§r")
+            sender.send_message(f"§7Use /paste to place it§r")
+            return True
+
+        # Otherwise, place directly in world
+        blocks_to_change = []
+        for x, y, z, block_name, data_value in blocks_list:
+            if block_name != "minecraft:air":
+                # Convert to world coordinates
+                target_x = int(player_location.x) + x
+                target_y = int(player_location.y) + y
+                target_z = int(player_location.z) + z
+                blocks_to_change.append((target_x, target_y, target_z, block_name, data_value))
 
         if not blocks_to_change:
             sender.send_message("Schematic is empty or only contains air.")

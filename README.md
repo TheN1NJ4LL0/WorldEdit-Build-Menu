@@ -4,7 +4,7 @@
 
 **A comprehensive WorldEdit plugin for Endstone with Builder's Menu, Build Areas, Blueprints, Zones, and Advanced Editing Tools**
 
-[![Version](https://img.shields.io/badge/version-3.2.0-blue.svg)](https://github.com/iciency/WorldEdit)
+[![Version](https://img.shields.io/badge/version-3.2.1-blue.svg)](https://github.com/iciency/WorldEdit)
 [![Endstone](https://img.shields.io/badge/endstone-0.10+-green.svg)](https://github.com/EndstoneMC/endstone)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow.svg)](https://www.python.org/)
 
@@ -36,11 +36,12 @@
 - **Smooth Tool** - Terrain smoothing with wooden hoe (sneak to configure, click to smooth at crosshair)
 - **Shape Tool** - Interactive shape spawning with wooden shovel (sneak to configure, click to spawn at crosshair)
 - **Block Operations** - Set, replace, walls, overlay, and more
-- **Clipboard System** - Copy, cut, and paste structures
+- **Clipboard System** - Copy, cut, and paste structures with rotation, flip, and offset support
 - **History Management** - Unlimited undo/redo support
 - **Shape Generation** - Spheres, cylinders, pyramids, squares (solid & hollow)
 - **Schematic Support** - Save/load `.schem` files with Java Edition compatibility
 - **Schematic Preview** - Visualize schematic placement with particle outlines before loading
+- **Advanced Paste** - Paste with rotation (90°, 180°, 270°), flip (X/Y/Z), and custom offsets
 - **Async Operations** - Large edits processed in chunks to prevent lag
 
 ### 🏗️ Builder's Menu System (NEW!)
@@ -87,12 +88,12 @@
    pip install build
    python -m build
    ```
-   This creates `dist/endstone_worldedit-3.1.0-py3-none-any.whl`
+   This creates `dist/endstone_worldedit-3.2.1-py3-none-any.whl`
 
 2. **Install to Server**
    ```bash
    # Copy the .whl file to your server's plugins folder
-   cp dist/endstone_worldedit-3.1.0-py3-none-any.whl /path/to/server/plugins/
+   cp dist/endstone_worldedit-3.2.1-py3-none-any.whl /path/to/server/plugins/
    ```
 
 3. **Restart Server**
@@ -617,12 +618,31 @@ This section provides detailed command usage with examples.
 
 **Paste clipboard:**
 ```bash
-/paste
+/paste [options]
 
-# Example:
+# Basic paste:
+/paste                        # Paste at your location
+
+# Advanced paste with transformations:
+/paste -r 90                  # Paste with 90° rotation
+/paste -r 180 -fx             # Paste rotated 180° and flipped on X-axis
+/paste -o 5,0,3               # Paste offset by 5 blocks east, 3 blocks south
+/paste -r 90 -fx -fz -o 0,10,0  # Combine rotation, flips, and offset
+
+# Options:
+#   -r <degrees>    Rotate (0, 90, 180, 270)
+#   -fx             Flip on X-axis (East/West)
+#   -fy             Flip on Y-axis (Up/Down)
+#   -fz             Flip on Z-axis (North/South)
+#   -o x,y,z        Offset from current position
+#   -a              Include air blocks
+#   -e              Paste entities (placeholder)
+#   -b              Paste biomes (placeholder)
+
+# Example workflow:
 1. /copy or /cut first
 2. Walk to where you want to paste
-3. /paste                     # Pastes at your location
+3. /paste -r 90 -o 0,5,0      # Paste rotated 90°, 5 blocks up
 ```
 
 ---
@@ -782,10 +802,17 @@ Blueprints are personal clipboard saves. Unlike schematics (which save selection
 
 **Load schematic:**
 ```bash
-/schem load <name>
+/schem load <name> [-c]
 
-# Example:
-/schem load my_house          # Loads and places at your location
+# Direct placement (old behavior):
+/schem load my_house          # Loads and places directly at your location
+
+# Load to clipboard (NEW):
+/schem load my_house -c       # Loads to clipboard for advanced paste
+# Then use /paste with transformations:
+/paste -r 90                  # Paste with 90° rotation
+/paste -r 180 -fx -o 5,0,0    # Paste rotated, flipped, and offset
+
 # Preview automatically clears after loading
 ```
 
@@ -989,7 +1016,15 @@ The plugin creates `plugins/WorldEdit/config.json` on first run:
 |---------|-------------|------------|
 | `/copy` | Copy selection to clipboard | `worldedit.command.copy` |
 | `/cut` | Cut selection to clipboard | `worldedit.command.cut` |
-| `/paste` | Paste clipboard at your location | `worldedit.command.paste` |
+| `/paste [options]` | Paste clipboard with optional transformations | `worldedit.command.paste` |
+
+**Paste Options:**
+- `-r <degrees>` - Rotate (0, 90, 180, 270)
+- `-fx` / `-fy` / `-fz` - Flip on X/Y/Z axis
+- `-o x,y,z` - Offset from current position
+- `-a` - Include air blocks
+- `-e` - Paste entities (placeholder)
+- `-b` - Paste biomes (placeholder)
 
 ### ↩️ History Commands
 
@@ -1037,10 +1072,15 @@ The plugin creates `plugins/WorldEdit/config.json` on first run:
 | Command | Description | Permission |
 |---------|-------------|------------|
 | `/schem save <name>` | Save selection as schematic | `worldedit.command.schem` |
-| `/schem load <name>` | Load schematic at your location | `worldedit.command.schem` |
+| `/schem load <name> [-c]` | Load schematic (use -c for clipboard) | `worldedit.command.schem` |
 | `/schem list` | List available schematics | `worldedit.command.schem` |
 | `/schem preview <name>` | Preview schematic placement with particles | `worldedit.command.schem` |
 | `/schem clearpreview` | Clear active schematic preview | `worldedit.command.schem` |
+
+**Schematic Loading:**
+- `/schem load <name>` - Direct placement at your location (old behavior)
+- `/schem load <name> -c` - Load to clipboard for advanced paste with transformations
+- After loading to clipboard, use `/paste` with rotation, flip, and offset options
 
 **Schematic Preview:**
 - Preview shows golden/cyan particles outlining where the schematic will be placed
@@ -1302,7 +1342,85 @@ permissions:
 
 ## 📊 Changelog
 
-### Version 3.2.0 - Interactive Tools & Preview Update (Current)
+### Version 3.3.0 - Container Support via Structure Files (Current)
+
+**🎉 NEW FEATURE: Container Preservation for Schematics!**
+- 🎁 **Schematic saves now preserve container contents!**
+  - Uses Minecraft Bedrock's `/structure save` and `/structure load` commands
+  - Hybrid system: Saves both `.schem` (blocks) and `.mcstructure` (containers) files
+  - Automatically attempts to use `.mcstructure` when loading for full data preservation
+
+**🔨 How It Works:**
+- **`/schem save <name>`** - Saves BOTH formats:
+  - `name.schem` - Sponge format (blocks only, for compatibility)
+  - `name.mcstructure` - Bedrock format (with containers, entities, NBT data!)
+- **`/schem load <name>`** - Attempts to use `.mcstructure` first
+  - If structure load succeeds: Preserves chest contents, furnace items, etc.
+  - If structure load fails: Falls back to `.schem` file (blocks only)
+  - Use `-c` flag to load to clipboard (uses `.schem` format)
+
+**✨ What's Preserved (when using structure files):**
+- ✅ Chest contents (regular, trapped, ender)
+- ✅ Furnace items and fuel (furnace, blast furnace, smoker)
+- ✅ Hopper contents
+- ✅ Dispenser/Dropper contents
+- ✅ Brewing stand potions
+- ✅ Lectern books
+- ✅ Shulker box contents
+- ✅ Item frames and armor stands
+- ✅ All other block entities!
+
+**📝 Important Notes:**
+- **Copy/Paste** commands do NOT preserve containers (use schematics instead)
+- **Structure files** are saved in `<world>/structures/` folder
+- **Clipboard mode** (`/schem load -c`) uses `.schem` format (no containers)
+- **Direct placement** (`/schem load`) attempts structure load (with containers)
+
+**🔧 Technical Details:**
+- Added `structure_utils.py` module for structure command wrappers
+- RapidNBT dependency ready for future enhancements
+- Backward compatible with existing `.schem` files
+- Graceful fallback if structure commands fail
+
+### Version 3.2.1 - Rotation & Transformation Fix
+
+**🐛 Critical Bug Fixes**
+- 🔧 **FIXED**: Schematic rotation not working in builder menu
+  - `/schem load` now supports `-c` flag to load to clipboard instead of direct placement
+  - Builder menu "Quick Load" now properly loads schematics to clipboard
+  - Builder menu "Load & Place" now uses clipboard loading + paste transformations
+- 🔧 **FIXED**: Paste command rotation and transformation flags not working
+  - Complete rewrite of `/paste` command with full transformation support
+  - Added `-r <degrees>` flag for rotation (0, 90, 180, 270)
+  - Added `-fx`, `-fy`, `-fz` flags for flipping on X, Y, Z axes
+  - Added `-o x,y,z` flag for custom offset positioning
+  - Added `-a`, `-e`, `-b` flags for air blocks, entities, and biomes
+- 🔧 **FIXED**: Rotation toggles in builder menu had no effect
+  - Rotation, flip, and offset options now properly applied when pasting
+  - All transformation options in "Load & Place" form now functional
+
+**🔨 Improvements**
+- 📈 Enhanced `/paste` command with comprehensive transformation options
+- 📈 Enhanced `/copy` command with optional flags: `-a` (include air), `-e` (entities), `-b` (biomes)
+- 📈 Improved schematic workflow: load to clipboard → transform → paste
+- 📈 Better separation between direct placement and clipboard-based operations
+- 📈 Consistent transformation behavior across all paste operations
+- 📈 **CRITICAL FIX**: All builder menu operations now call command handlers directly
+  - Bypasses Endstone's command parser to avoid syntax validation errors
+  - Commands with flags (copy, paste, rotate, flip, schem) use direct handler calls
+  - Eliminates "Syntax error: Unexpected '-a'" and similar errors
+- 📈 **CRITICAL FIX**: Removed `usages` field from command definitions with parameters
+  - Endstone was treating `<parameter>` placeholders as literal strings
+  - Commands now accept any arguments and validate internally
+- 📈 Added comprehensive debug logging to console for troubleshooting command execution
+
+**📝 Documentation**
+- 📚 Updated `/paste` command documentation with all transformation flags
+- 📚 Updated `/schem load` documentation with clipboard flag
+- 📚 Added examples for rotation, flip, and offset combinations
+- 📚 Clarified schematic loading modes (direct vs clipboard)
+
+### Version 3.2.0 - Interactive Tools & Preview Update
 
 **🎉 Major Features**
 - ✨ **NEW**: Blueprint system for personal clipboard saves

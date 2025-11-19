@@ -3,7 +3,6 @@ from endstone_worldedit.utils import command_executor
 command = {
     "hpyramid": {
         "description": "Creates a hollow pyramid.",
-        "usages": ["/hpyramid <block: block> <size: int>"],
         "permissions": ["worldedit.command.pyramid"]
     }
 }

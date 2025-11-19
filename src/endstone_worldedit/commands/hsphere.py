@@ -4,7 +4,6 @@ from endstone_worldedit.utils import command_executor
 command = {
     "hsphere": {
         "description": "Creates a hollow sphere.",
-        "usages": ["/hsphere <block: block> <radius: int>"],
         "permissions": ["worldedit.command.sphere"]
     }
 }
