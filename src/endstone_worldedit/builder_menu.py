@@ -1437,26 +1437,32 @@ class MenuHandler:
 
     def show_blueprint_menu(self, player: "Player") -> None:
         """Show blueprint menu.
-        
+
         Args:
             player: Player to show menu to
         """
-        blueprints = self.plugin.blueprint_manager.list_blueprints(player.unique_id)
-        
-        form = UIBuilder.create_blueprint_menu(player, blueprints)
-        
+        form = ActionForm()
+        form.title = "§l§5Blueprint Manager§r"
+        form.content = "§7Save and load your clipboard as blueprints§r"
+
+        form.add_button("§aSave Blueprint§r\n§7Save clipboard as blueprint§r")
+        form.add_button("§eLoad Blueprint§r\n§7Load personal blueprint§r")
+        form.add_button("§bBrowse Blueprints§r\n§7View all your blueprints§r")
+        form.add_button("§6Shared Blueprints§r\n§7Load shared blueprints§r")
+        form.add_button("§7« Back to Main Menu§r")
+
         def on_submit(player: "Player", data: Optional[int]):
             if data is None:
                 return
-            
+
             if data == 0:  # Save
                 self.show_save_blueprint_form(player)
             elif data == 1:  # Load
-                player.send_message("§7Blueprint loader not yet implemented§r")
+                self.show_load_blueprint_form(player)
             elif data == 2:  # Browse
-                player.send_message("§7Blueprint browser not yet implemented§r")
+                self.show_browse_blueprints(player)
             elif data == 3:  # Shared
-                player.send_message("§7Shared blueprints not yet implemented§r")
+                self.show_shared_blueprints(player)
             else:  # Back
                 self.show_main_menu(player)
 
@@ -1465,24 +1471,206 @@ class MenuHandler:
 
     def show_save_blueprint_form(self, player: "Player") -> None:
         """Show save blueprint form.
-        
+
         Args:
             player: Player to show menu to
         """
-        form = UIBuilder.create_input_form("§l§2Save Blueprint§r", "Blueprint Name:", "my_build")
-        
+        # Check if player has clipboard
+        player_uuid = player.unique_id
+        if player_uuid not in self.plugin.clipboard or not self.plugin.clipboard[player_uuid]:
+            player.send_message("§cClipboard is empty! Use /copy first.§r")
+            self.show_blueprint_menu(player)
+            return
+
+        form = ModalForm()
+        form.title = "§l§2Save Blueprint§r"
+        form.add_control(TextInput("Blueprint Name:", "Enter name", "my_build"))
+
         def on_submit(player: "Player", data: Optional[str]):
             if data is None:
+                self.show_blueprint_menu(player)
                 return
 
             import json
             values = json.loads(data)
 
             if not values[0]:
+                player.send_message("§cPlease enter a blueprint name!§r")
+                self.show_blueprint_menu(player)
                 return
 
             name = values[0].strip()
             self.handle_save_blueprint(player, name)
+            self.show_blueprint_menu(player)
+
+        form.on_submit = on_submit
+        player.send_form(form)
+
+    def show_load_blueprint_form(self, player: "Player") -> None:
+        """Show load blueprint form.
+
+        Args:
+            player: Player to show menu to
+        """
+        player_uuid = str(player.unique_id)
+        blueprints = self.plugin.blueprint_manager.list_blueprints(player_uuid, include_shared=False)
+
+        # Filter out shared blueprints
+        personal_blueprints = [bp for bp in blueprints if not bp.startswith("[Shared]")]
+
+        if not personal_blueprints:
+            player.send_message("§7You don't have any saved blueprints.§r")
+            player.send_message("§7Use 'Save Blueprint' to save your clipboard§r")
+            self.show_blueprint_menu(player)
+            return
+
+        form = ModalForm()
+        form.title = "§l§eLoad Blueprint§r"
+        form.add_control(Dropdown("Select Blueprint:", personal_blueprints, 0))
+
+        def on_submit(player: "Player", data: Optional[str]):
+            if data is None:
+                self.show_blueprint_menu(player)
+                return
+
+            import json
+            values = json.loads(data)
+
+            blueprint_index = values[0] if len(values) > 0 else 0
+            if blueprint_index >= len(personal_blueprints):
+                player.send_message("§cInvalid blueprint selection!§r")
+                self.show_blueprint_menu(player)
+                return
+
+            blueprint_name = personal_blueprints[blueprint_index]
+
+            # Load blueprint
+            blueprint = self.plugin.blueprint_manager.load_blueprint(player_uuid, blueprint_name, from_shared=False)
+
+            if blueprint is None:
+                player.send_message(f"§cFailed to load blueprint '{blueprint_name}'!§r")
+                self.show_blueprint_menu(player)
+                return
+
+            # Load into clipboard
+            self.plugin.clipboard[player.unique_id] = blueprint.clipboard_data
+
+            player.send_message(f"§aBlueprint '{blueprint_name}' loaded into clipboard!§r")
+            player.send_message(f"§7Author: {blueprint.author}§r")
+            player.send_message(f"§7Use /paste to place it§r")
+            self.show_blueprint_menu(player)
+
+        form.on_submit = on_submit
+        player.send_form(form)
+
+    def show_browse_blueprints(self, player: "Player") -> None:
+        """Show browse blueprints menu.
+
+        Args:
+            player: Player to show menu to
+        """
+        player_uuid = str(player.unique_id)
+        blueprints = self.plugin.blueprint_manager.list_blueprints(player_uuid, include_shared=False)
+
+        # Filter out shared blueprints
+        personal_blueprints = [bp for bp in blueprints if not bp.startswith("[Shared]")]
+
+        if not personal_blueprints:
+            player.send_message("§7You don't have any saved blueprints.§r")
+            self.show_blueprint_menu(player)
+            return
+
+        form = ActionForm()
+        form.title = "§l§bYour Blueprints§r"
+        form.content = f"§7You have {len(personal_blueprints)} saved blueprints§r"
+
+        for bp_name in personal_blueprints:
+            form.add_button(f"§e{bp_name}§r\n§7Click to load§r")
+
+        form.add_button("§7« Back§r")
+
+        def on_submit(player: "Player", data: Optional[int]):
+            if data is None:
+                return
+
+            if data == len(personal_blueprints):  # Back button
+                self.show_blueprint_menu(player)
+                return
+
+            if data < len(personal_blueprints):
+                blueprint_name = personal_blueprints[data]
+
+                # Load blueprint
+                blueprint = self.plugin.blueprint_manager.load_blueprint(player_uuid, blueprint_name, from_shared=False)
+
+                if blueprint is None:
+                    player.send_message(f"§cFailed to load blueprint '{blueprint_name}'!§r")
+                    self.show_blueprint_menu(player)
+                    return
+
+                # Load into clipboard
+                self.plugin.clipboard[player.unique_id] = blueprint.clipboard_data
+
+                player.send_message(f"§aBlueprint '{blueprint_name}' loaded!§r")
+                player.send_message(f"§7Author: {blueprint.author}§r")
+                player.send_message(f"§7Use /paste to place it§r")
+                self.show_blueprint_menu(player)
+
+        form.on_submit = on_submit
+        player.send_form(form)
+
+    def show_shared_blueprints(self, player: "Player") -> None:
+        """Show shared blueprints menu.
+
+        Args:
+            player: Player to show menu to
+        """
+        player_uuid = str(player.unique_id)
+        blueprints = self.plugin.blueprint_manager.list_blueprints(player_uuid, include_shared=True)
+
+        # Filter for shared blueprints only
+        shared_blueprints = [bp.replace("[Shared] ", "") for bp in blueprints if bp.startswith("[Shared]")]
+
+        if not shared_blueprints:
+            player.send_message("§7No shared blueprints available.§r")
+            self.show_blueprint_menu(player)
+            return
+
+        form = ActionForm()
+        form.title = "§l§6Shared Blueprints§r"
+        form.content = f"§7{len(shared_blueprints)} shared blueprints available§r"
+
+        for bp_name in shared_blueprints:
+            form.add_button(f"§e{bp_name}§r\n§7Click to load§r")
+
+        form.add_button("§7« Back§r")
+
+        def on_submit(player: "Player", data: Optional[int]):
+            if data is None:
+                return
+
+            if data == len(shared_blueprints):  # Back button
+                self.show_blueprint_menu(player)
+                return
+
+            if data < len(shared_blueprints):
+                blueprint_name = shared_blueprints[data]
+
+                # Load shared blueprint
+                blueprint = self.plugin.blueprint_manager.load_blueprint(player_uuid, blueprint_name, from_shared=True)
+
+                if blueprint is None:
+                    player.send_message(f"§cFailed to load shared blueprint '{blueprint_name}'!§r")
+                    self.show_blueprint_menu(player)
+                    return
+
+                # Load into clipboard
+                self.plugin.clipboard[player.unique_id] = blueprint.clipboard_data
+
+                player.send_message(f"§aShared blueprint '{blueprint_name}' loaded!§r")
+                player.send_message(f"§7Author: {blueprint.author}§r")
+                player.send_message(f"§7Use /paste to place it§r")
+                self.show_blueprint_menu(player)
 
         form.on_submit = on_submit
         player.send_form(form)
@@ -1808,30 +1996,28 @@ class MenuHandler:
 
     def handle_save_blueprint(self, player: "Player", name: str) -> None:
         """Handle save blueprint."""
-        player_uuid = player.unique_id
+        player_uuid = str(player.unique_id)
 
-        if player_uuid not in self.plugin.clipboard:
+        if player.unique_id not in self.plugin.clipboard:
             player.send_message("§cClipboard is empty!§r")
             return
 
-        clipboard = self.plugin.clipboard[player_uuid]
+        clipboard = self.plugin.clipboard[player.unique_id]
 
         # Save blueprint using blueprint manager
-        try:
-            import json
-            import os
+        success = self.plugin.blueprint_manager.save_blueprint(
+            player_uuid,
+            name,
+            clipboard,
+            author=player.name,
+            shared=False
+        )
 
-            blueprint_dir = f"plugins/WorldEdit/blueprints/{player_uuid}"
-            os.makedirs(blueprint_dir, exist_ok=True)
-
-            blueprint_path = os.path.join(blueprint_dir, f"{name}.json")
-
-            with open(blueprint_path, 'w') as f:
-                json.dump(clipboard, f, indent=2)
-
+        if success:
             player.send_message(f"§aBlueprint '{name}' saved!§r")
-        except Exception as e:
-            player.send_message(f"§cFailed to save blueprint: {e}§r")
+            player.send_message(f"§7Use /blueprint load {name} to load it§r")
+        else:
+            player.send_message(f"§cFailed to save blueprint '{name}'!§r")
 
     def handle_create_zone(self, player: "Player", name: str, radius: int, duration: float) -> None:
         """Handle create zone."""

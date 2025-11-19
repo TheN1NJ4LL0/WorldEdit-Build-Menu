@@ -667,6 +667,90 @@ This section provides detailed command usage with examples.
 
 ---
 
+#### **Blueprint Commands**
+
+**What are blueprints?**
+Blueprints are personal clipboard saves. Unlike schematics (which save selections), blueprints save your clipboard directly. This makes them perfect for:
+- Saving builds you've copied
+- Creating a library of reusable structures
+- Sharing builds with other players (via shared folder)
+
+**Save clipboard as blueprint:**
+```bash
+/blueprint save <name>
+# or
+/bp save <name>
+
+# Example:
+1. /copy                      # Copy something
+2. /blueprint save my_tower   # Save clipboard as blueprint
+   → "Blueprint 'my_tower' saved!"
+   → "Use /blueprint load my_tower to load it"
+```
+
+**Load blueprint:**
+```bash
+/blueprint load <name>
+# or
+/bp load <name>
+
+# Example:
+/blueprint load my_tower      # Loads blueprint into clipboard
+   → "Blueprint 'my_tower' loaded into clipboard!"
+   → "Author: PlayerName"
+   → "Use /paste to place it"
+```
+
+**List your blueprints:**
+```bash
+/blueprint list
+# or
+/bp list
+
+# Output:
+# Your Blueprints (5 total):
+#   - my_tower
+#   - castle_wall
+#   - fountain
+#   - bridge
+#   - statue
+# Use /blueprint load <name> to load a blueprint
+```
+
+**Delete blueprint:**
+```bash
+/blueprint delete <name>
+# or
+/bp delete <name>
+
+# Example:
+/blueprint delete old_build   # Deletes the blueprint
+   → "Blueprint 'old_build' deleted!"
+```
+
+**Load shared blueprints:**
+```bash
+/blueprint shared list        # List shared blueprints
+/blueprint shared load <name> # Load a shared blueprint
+
+# Example:
+/blueprint shared list
+   → Shared Blueprints (3 total):
+   →   - admin_spawn
+   →   - event_arena
+   →   - shop_template
+
+/blueprint shared load admin_spawn
+   → "Shared blueprint 'admin_spawn' loaded!"
+   → "Author: AdminName"
+```
+
+**Blueprint vs Schematic:**
+- **Blueprints**: Save clipboard (personal, JSON format, fast)
+- **Schematics**: Save selection (NBT format, compatible with other tools)
+
+---
+
 #### **Schematic Commands**
 
 **Save selection as schematic:**
@@ -927,6 +1011,27 @@ The plugin creates `plugins/WorldEdit/config.json` on first run:
 
 **Note:** Squares (rectangular prisms) are available through the menu: `/builder` → Shapes → Square
 
+### 📦 Blueprint Commands
+
+| Command | Description | Permission |
+|---------|-------------|------------|
+| `/blueprint save <name>` | Save clipboard as blueprint | `worldedit.command.blueprint` |
+| `/blueprint load <name>` | Load blueprint into clipboard | `worldedit.command.blueprint` |
+| `/blueprint list` | List your blueprints | `worldedit.command.blueprint` |
+| `/blueprint delete <name>` | Delete a blueprint | `worldedit.command.blueprint` |
+| `/blueprint shared list` | List shared blueprints | `worldedit.command.blueprint` |
+| `/blueprint shared load <name>` | Load shared blueprint | `worldedit.command.blueprint` |
+
+**Aliases:** `/bp` can be used instead of `/blueprint`
+
+**Blueprint Notes:**
+- Blueprints save your clipboard (not selection)
+- Personal blueprints are stored per-player
+- Shared blueprints are accessible to all players
+- Use blueprints for quick save/load of copied structures
+
+---
+
 ### 💾 Schematic Commands
 
 | Command | Description | Permission |
@@ -1006,7 +1111,8 @@ worldedit.*                    # All permissions (operators)
     ├── worldedit.command.cyl
     ├── worldedit.command.hcyl
     ├── worldedit.command.pyramid
-    └── worldedit.command.schem
+    ├── worldedit.command.schem
+    └── worldedit.command.blueprint
 ```
 
 ### Default Permissions
@@ -1199,6 +1305,14 @@ permissions:
 ### Version 3.2.0 - Interactive Tools & Preview Update (Current)
 
 **🎉 Major Features**
+- ✨ **NEW**: Blueprint system for personal clipboard saves
+  - `/blueprint save <name>` - Save clipboard as blueprint
+  - `/blueprint load <name>` - Load blueprint into clipboard
+  - `/blueprint list` - List your blueprints
+  - `/blueprint delete <name>` - Delete blueprint
+  - `/blueprint shared list/load` - Access shared blueprints
+  - Fully functional menu integration
+  - Personal and shared blueprint folders
 - ✨ **NEW**: Shape Tool system with wooden shovel for interactive shape spawning
   - Sneak + Right-click to configure shape (type, block, size)
   - Right-click (standing) to spawn shape at crosshair location

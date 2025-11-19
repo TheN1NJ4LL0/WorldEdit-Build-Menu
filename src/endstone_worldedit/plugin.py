@@ -235,11 +235,13 @@ class WorldEditPlugin(Plugin):
                 preview_data['min_pos'] = (min_x, min_y, min_z)
                 preview_data['max_pos'] = (max_x, max_y, max_z)
 
-                # Use different particle color for preview (yellow/gold)
+                # Use different particle for preview (yellow/orange flame)
                 step = self.plugin_config["particle-density-step"]
-                particle_type = "minecraft:soul_fire_flame"  # Different particle for preview
+                # Use basic_flame_particle for yellow/orange color (different from selection)
+                particle_type = "minecraft:basic_flame_particle"
 
                 def run_particle_command(x, y, z):
+                    # Use same format as selection particles
                     command = f"execute as {player.name} at @s run particle {particle_type} {x} {y} {z}"
                     self.server.dispatch_command(self.silent_sender, command)
 
@@ -376,25 +378,16 @@ class WorldEditPlugin(Plugin):
     def on_block_break(self, event: BlockBreakEvent):
         """Handle block break events for wand tool only."""
         player = event.player
-        player_uuid = player.unique_id
-        current_time = time.time()
-
-        # Check cooldown
-        last_interact_time = self.interaction_cooldown.get(player_uuid, 0)
-        if current_time - last_interact_time < 0.1:
-            return
-
         item = player.inventory.item_in_main_hand
         if item is not None and item.type == "minecraft:wooden_axe":
             # Wooden axe - wand tool (left-click for pos1)
             event.cancel()
-            self.interaction_cooldown[player_uuid] = current_time
+            player_uuid = player.unique_id
             if player_uuid not in self.selections:
                 self.selections[player_uuid] = {}
             block = event.block
             self.selections[player_uuid]["pos1"] = (block.x, block.y, block.z)
-            player.send_message(f"Position 1 set to ({block.x}, {block.y}, {block.z}).")
-        # Remove the wooden_shovel handling from block break
+            player.send_message(f"§aPosition 1 set to ({block.x}, {block.y}, {block.z}).§r")
 
     @event_handler(priority=EventPriority.HIGH)
     def on_player_interact(self, event: PlayerInteractEvent):
@@ -405,45 +398,47 @@ class WorldEditPlugin(Plugin):
 
         # Check cooldown
         last_interact_time = self.interaction_cooldown.get(player_uuid, 0)
-        if current_time - last_interact_time < 0.3:
+        if current_time - last_interact_time < 0.1:  # 100ms cooldown
             return
 
-        item = player.inventory.item_in_main_hand
-        if item is not None and item.type == "minecraft:wooden_shovel":
-            # Wooden shovel - shape tool
-            event.cancel()
-            self.interaction_cooldown[player_uuid] = current_time
-            
-            if player.is_sneaking:
-                # Sneaking + right-click = Configure shape
-                if self.shape_tool_handler:
-                    self.shape_tool_handler.show_shape_selection_menu(player)
-            else:
-                # Standing + right-click = Spawn shape
-                if self.shape_tool_handler:
-                    self.shape_tool_handler.spawn_shape_at_crosshair(player)
-        elif item is not None and item.type == "minecraft:wooden_axe":
-            # Wooden axe - wand tool (right-click for pos2)
-            self.interaction_cooldown[player_uuid] = current_time
-            if player_uuid not in self.selections:
-                self.selections[player_uuid] = {}
-            block = event.block
-            if block:  # Only if clicking on a block
-                self.selections[player_uuid]["pos2"] = (block.x, block.y, block.z)
-                player.send_message(f"Position 2 set to ({block.x}, {block.y}, {block.z}).")
-        elif item is not None and item.type == "minecraft:wooden_hoe":
-            # Wooden hoe - smooth tool
-            event.cancel()
-            self.interaction_cooldown[player_uuid] = current_time
+        # Only handle right-click events
+        if event.action.name == "RIGHT_CLICK_BLOCK":
+            item = player.inventory.item_in_main_hand
+            if item is not None and item.type == "minecraft:wooden_shovel":
+                # Wooden shovel - shape tool
+                event.cancel()
+                self.interaction_cooldown[player_uuid] = current_time
 
-            if player.is_sneaking:
-                # Sneaking + right-click = Configure smooth
-                if self.smooth_tool_handler:
-                    self.smooth_tool_handler.show_smooth_config_menu(player)
-            else:
-                # Standing + right-click = Apply smooth at crosshair
-                if self.smooth_tool_handler:
-                    self.smooth_tool_handler.apply_smooth_at_crosshair(player)
+                if player.is_sneaking:
+                    # Sneaking + right-click = Configure shape
+                    if self.shape_tool_handler:
+                        self.shape_tool_handler.show_shape_selection_menu(player)
+                else:
+                    # Standing + right-click = Spawn shape
+                    if self.shape_tool_handler:
+                        self.shape_tool_handler.spawn_shape_at_crosshair(player)
+            elif item is not None and item.type == "minecraft:wooden_axe":
+                # Wooden axe - wand tool (right-click for pos2)
+                self.interaction_cooldown[player_uuid] = current_time
+                if player_uuid not in self.selections:
+                    self.selections[player_uuid] = {}
+                block = event.block
+                if block:  # Only if clicking on a block
+                    self.selections[player_uuid]["pos2"] = (block.x, block.y, block.z)
+                    player.send_message(f"§aPosition 2 set to ({block.x}, {block.y}, {block.z}).§r")
+            elif item is not None and item.type == "minecraft:wooden_hoe":
+                # Wooden hoe - smooth tool
+                event.cancel()
+                self.interaction_cooldown[player_uuid] = current_time
+
+                if player.is_sneaking:
+                    # Sneaking + right-click = Configure smooth
+                    if self.smooth_tool_handler:
+                        self.smooth_tool_handler.show_smooth_config_menu(player)
+                else:
+                    # Standing + right-click = Apply smooth at crosshair
+                    if self.smooth_tool_handler:
+                        self.smooth_tool_handler.apply_smooth_at_crosshair(player)
 
     def _check_shape_tool_usage(self):
         """Check for shape tool usage every tick."""
