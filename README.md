@@ -4,7 +4,7 @@
 
 **A comprehensive WorldEdit plugin for Endstone with Builder's Menu, Build Areas, Blueprints, Zones, and Advanced Editing Tools**
 
-[![Version](https://img.shields.io/badge/version-3.2.1-blue.svg)](https://github.com/iciency/WorldEdit)
+[![Version](https://img.shields.io/badge/version-3.3.0-blue.svg)](https://github.com/iciency/WorldEdit)
 [![Endstone](https://img.shields.io/badge/endstone-0.10+-green.svg)](https://github.com/EndstoneMC/endstone)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow.svg)](https://www.python.org/)
 
